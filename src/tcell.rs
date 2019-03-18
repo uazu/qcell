@@ -39,8 +39,8 @@ impl<Q: 'static> TCellOwner<Q> {
     /// instances can be borrowed immutably at the same time from the
     /// same owner.
     #[inline]
-    pub fn get<'a, T>(&'a self, qc: &'a TCell<Q, T>) -> &'a T {
-        unsafe { &*qc.value.get() }
+    pub fn get<'a, T>(&'a self, tc: &'a TCell<Q, T>) -> &'a T {
+        unsafe { &*tc.value.get() }
     }
 
     /// Borrow contents of a `TCell` mutably.  Only one `TCell` at a
@@ -48,8 +48,8 @@ impl<Q: 'static> TCellOwner<Q> {
     /// returned reference must go out of scope before another can be
     /// borrowed.
     #[inline]
-    pub fn get_mut<'a, T>(&'a mut self, qc: &'a TCell<Q, T>) -> &'a mut T {
-        unsafe { &mut *qc.value.get() }
+    pub fn get_mut<'a, T>(&'a mut self, tc: &'a TCell<Q, T>) -> &'a mut T {
+        unsafe { &mut *tc.value.get() }
     }
 
     /// Borrow contents of two `TCell` instances mutably.  Panics if
@@ -57,14 +57,14 @@ impl<Q: 'static> TCellOwner<Q> {
     #[inline]
     pub fn get_mut2<'a, T, U>(
         &'a mut self,
-        qc1: &'a TCell<Q, T>,
-        qc2: &'a TCell<Q, U>,
+        tc1: &'a TCell<Q, T>,
+        tc2: &'a TCell<Q, U>,
     ) -> (&'a mut T, &'a mut U) {
         assert!(
-            qc1 as *const _ as usize != qc2 as *const _ as usize,
+            tc1 as *const _ as usize != tc2 as *const _ as usize,
             "Illegal to borrow same TCell twice with get_mut2()"
         );
-        unsafe { (&mut *qc1.value.get(), &mut *qc2.value.get()) }
+        unsafe { (&mut *tc1.value.get(), &mut *tc2.value.get()) }
     }
 
     /// Borrow contents of three `TCell` instances mutably.  Panics if
@@ -72,21 +72,21 @@ impl<Q: 'static> TCellOwner<Q> {
     #[inline]
     pub fn get_mut3<'a, T, U, V>(
         &'a mut self,
-        qc1: &'a TCell<Q, T>,
-        qc2: &'a TCell<Q, U>,
-        qc3: &'a TCell<Q, V>,
+        tc1: &'a TCell<Q, T>,
+        tc2: &'a TCell<Q, U>,
+        tc3: &'a TCell<Q, V>,
     ) -> (&'a mut T, &'a mut U, &'a mut V) {
         assert!(
-            (qc1 as *const _ as usize != qc2 as *const _ as usize)
-                && (qc2 as *const _ as usize != qc3 as *const _ as usize)
-                && (qc3 as *const _ as usize != qc1 as *const _ as usize),
+            (tc1 as *const _ as usize != tc2 as *const _ as usize)
+                && (tc2 as *const _ as usize != tc3 as *const _ as usize)
+                && (tc3 as *const _ as usize != tc1 as *const _ as usize),
             "Illegal to borrow same TCell twice with get_mut3()"
         );
         unsafe {
             (
-                &mut *qc1.value.get(),
-                &mut *qc2.value.get(),
-                &mut *qc3.value.get(),
+                &mut *tc1.value.get(),
+                &mut *tc2.value.get(),
+                &mut *tc3.value.get(),
             )
         }
     }

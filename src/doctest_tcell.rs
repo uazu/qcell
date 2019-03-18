@@ -12,6 +12,30 @@
 //! let mut owner2 = ACellOwner::new();  // Panics here
 //! ```
 //!
+//! It should be impossible to copy a TCellOwner:
+//!
+//! ```compile_fail
+//!# use qcell::{TCell, TCellOwner};
+//!# use std::rc::Rc;
+//! struct Marker;
+//! type ACell<T> = TCell<Marker, T>;
+//! type ACellOwner = TCellOwner<Marker>;
+//! let mut owner1 = ACellOwner::new();
+//! let mut owner2 = owner1;
+//! let rc = Rc::new(ACell::new(&owner1, 100u32));  // Compile fail
+//! ```
+//!
+//! It should be impossible to clone a TCellOwner:
+//!
+//! ```compile_fail
+//!# use qcell::{TCell, TCellOwner};
+//!# use std::rc::Rc;
+//! struct Marker;
+//! type ACellOwner = TCellOwner<Marker>;
+//! let mut owner1 = ACellOwner::new();
+//! let owner2 = owner1.clone();  // Compile fail
+//! ```
+//!
 //! Two different owners can't borrow each other's cells immutably:
 //!
 //! ```compile_fail
