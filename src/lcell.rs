@@ -4,8 +4,10 @@ use std::marker::PhantomData;
 type Id<'id> = PhantomData<Cell<&'id mut ()>>;
 
 /// Borrowing-owner of zero or more [`LCell`](struct.LCell.html)
-/// instances.  Use `LCellOwner::scope(|owner| ...)` to create an
-/// instance of this type.
+/// instances.
+///
+/// Use `LCellOwner::scope(|owner| ...)` to create an instance of this
+/// type.
 ///
 /// This based around creating an invariant lifetime within the
 /// closure, which is different to any other Rust lifetime thanks to
@@ -18,12 +20,8 @@ type Id<'id> = PhantomData<Cell<&'id mut ()>>;
 /// and its linked playground code.
 ///
 /// This works in a similar way to a cell type known as `GhostCell` or
-/// `ghost_cell`, but the invariant lifetime discussion above predates
-/// the `GhostCell` implementation.  Also `GhostCell` doesn't require
-/// an owner to be passed to the cell constructor, instead leaving it
-/// to Rust to work out.  `LCell` follows the pattern of the other
-/// cell types in this crate, and requires the owner argument which
-/// keeps things clear and gives an additional check.
+/// `ghost_cell`, but the invariant lifetime discussion above that
+/// this code is based on predates the `GhostCell` implementation.
 ///
 /// See also [crate documentation](index.html).
 pub struct LCellOwner<'id> {
@@ -40,6 +38,14 @@ impl<'id> LCellOwner<'id> {
         F: for<'scope_id> FnOnce(LCellOwner<'scope_id>),
     {
         f(Self { _id: PhantomData })
+    }
+
+    /// Create a new cell owned by this owner instance.  See also
+    /// [`LCell::new`].
+    ///
+    /// [`LCell::new`]: struct.LCell.html
+    pub fn cell<T>(&self, value: T) -> LCell<'id, T> {
+        LCell::<T>::new(value)
     }
 
     /// Borrow contents of a `LCell` immutably.  Many `LCell`
@@ -103,7 +109,8 @@ impl<'id> LCellOwner<'id> {
 /// [`LCellOwner`].
 ///
 /// To borrow from this cell, use the borrowing calls on the
-/// [`LCellOwner`] instance that was used to create it.
+/// [`LCellOwner`] instance that owns it, i.e. that shares the same
+/// Rust lifetime.
 ///
 /// See also [crate documentation](index.html).
 ///
@@ -114,13 +121,84 @@ pub struct LCell<'id, T> {
 }
 
 impl<'id, T> LCell<'id, T> {
-    /// Create a new `LCell` owned for borrowing purposes by the given
-    /// `LCellOwner<'id>`
+    /// Create a new `LCell`.  The owner of this cell is inferred by
+    /// Rust from the context.  So the owner lifetime is whatever
+    /// lifetime is required by the first use of the new `LCell`.
     #[inline]
-    pub fn new(_owner: &LCellOwner<'id>, value: T) -> LCell<'id, T> {
+    pub fn new(value: T) -> LCell<'id, T> {
         LCell {
             _id: PhantomData,
             value: UnsafeCell::new(value),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{LCell, LCellOwner};
+    use std::rc::Rc;
+
+    #[test]
+    fn lcell() {
+        LCellOwner::scope(|mut owner| {
+            let c1 = LCell::new(100u32);
+            let c2 = owner.cell(200u32);
+            (*owner.get_mut(&c1)) += 1;
+            (*owner.get_mut(&c2)) += 2;
+            let c1ref = owner.get(&c1);
+            let c2ref = owner.get(&c2);
+            let total = *c1ref + *c2ref;
+            assert_eq!(total, 303);
+        });
+    }
+
+    #[test]
+    #[should_panic]
+    fn lcell_get_mut2() {
+        LCellOwner::scope(|mut owner| {
+            let c1 = Rc::new(LCell::new(100u32));
+            let (mutref1, mutref2) = owner.get_mut2(&c1, &c1);
+            *mutref1 += 1;
+            *mutref2 += 1;
+        });
+    }
+
+    #[test]
+    #[should_panic]
+    fn lcell_get_mut3_1() {
+        LCellOwner::scope(|mut owner| {
+            let c1 = Rc::new(LCell::new(100u32));
+            let c2 = Rc::new(LCell::new(200u32));
+            let (mutref1, mutref2, mutref3) = owner.get_mut3(&c1, &c1, &c2);
+            *mutref1 += 1;
+            *mutref2 += 1;
+            *mutref3 += 1;
+        });
+    }
+
+    #[test]
+    #[should_panic]
+    fn lcell_get_mut3_2() {
+        LCellOwner::scope(|mut owner| {
+            let c1 = Rc::new(LCell::new(100u32));
+            let c2 = Rc::new(LCell::new(200u32));
+            let (mutref1, mutref2, mutref3) = owner.get_mut3(&c1, &c2, &c1);
+            *mutref1 += 1;
+            *mutref2 += 1;
+            *mutref3 += 1;
+        });
+    }
+
+    #[test]
+    #[should_panic]
+    fn lcell_get_mut3_3() {
+        LCellOwner::scope(|mut owner| {
+            let c1 = Rc::new(LCell::new(100u32));
+            let c2 = Rc::new(LCell::new(200u32));
+            let (mutref1, mutref2, mutref3) = owner.get_mut3(&c2, &c1, &c1);
+            *mutref1 += 1;
+            *mutref2 += 1;
+            *mutref3 += 1;
+        });
     }
 }

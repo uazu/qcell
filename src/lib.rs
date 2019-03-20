@@ -98,7 +98,7 @@
 //! type ACellOwner = TCellOwner<Marker>;
 //! let mut owner = ACellOwner::new();
 //!
-//! let item = Rc::new(ACell::new(&owner, Vec::<u8>::new()));
+//! let item = Rc::new(ACell::new(Vec::<u8>::new()));
 //! let iref = owner.get_mut(&item);
 //! iref.push(1);
 //! test(&mut owner, &item);
@@ -114,7 +114,7 @@
 //!# use qcell::{LCell, LCellOwner};
 //!# use std::rc::Rc;
 //! LCellOwner::scope(|mut owner| {
-//!   let item = Rc::new(LCell::new(&owner, Vec::<u8>::new()));
+//!   let item = Rc::new(LCell::new(Vec::<u8>::new()));
 //!   let iref = owner.get_mut(&item);
 //!   iref.push(1);
 //!   test(&mut owner, &item);
@@ -196,12 +196,12 @@
 //! - Con: Can only borrow up to 3 objects at a time
 //! - Con: Requires lifetime annotations on calls and structures
 //!
-//! Cell | Owner ID | Cell overhead | Borrow check | Owner check
-//! ---|---|---|---|---
-//! `RefCell` | n/a | `usize` | Runtime | n/a
-//! `QCell` | integer | `u32` | Compile-time | Runtime
-//! `TCell` | marker type | none | Compile-time | Compile-time
-//! `LCell` | lifetime | none | Compile-time | Compile-time
+//! Cell | Owner ID | Cell overhead | Borrow check | Owner check | Owner creation check
+//! ---|---|---|---|---|---
+//! `RefCell` | n/a | `usize` | Runtime | n/a | n/a
+//! `QCell` | integer | `u32` | Compile-time | Runtime | Runtime
+//! `TCell` | marker type | none | Compile-time | Compile-time | Runtime
+//! `LCell` | lifetime | none | Compile-time | Compile-time | Compile-time
 //!
 //! Owner ergonomics:
 //!
@@ -217,9 +217,9 @@
 //! Cell | Cell type | Cell creation
 //! ---|---|---
 //! `RefCell` | `RefCell<T>` | `RefCell::new(v)`
-//! `QCell` | `QCell<T>` | `QCell::new(&owner, v)`
-//! `TCell` | `ACell<T>` | `ACell::new(&owner, v)`
-//! `LCell` | `LCell<'id, T>` | `LCell::new(owner, v)`
+//! `QCell` | `QCell<T>` | `owner.cell(v)` or `QCell::new(&owner, v)`
+//! `TCell` | `ACell<T>` | `owner.cell(v)` or `ACell::new(v)`
+//! `LCell` | `LCell<'id, T>` | `owner.cell(v)` or `LCell::new(v)`
 //!
 //! Borrowing ergonomics:
 //!
@@ -268,5 +268,6 @@ pub use crate::lcell::LCell;
 pub use crate::lcell::LCellOwner;
 pub use crate::qcell::QCell;
 pub use crate::qcell::QCellOwner;
+pub use crate::qcell::QCellOwnerID;
 pub use crate::tcell::TCell;
 pub use crate::tcell::TCellOwner;

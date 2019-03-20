@@ -35,6 +35,14 @@ impl<Q: 'static> TCellOwner<Q> {
         Self { typ: PhantomData }
     }
 
+    /// Create a new cell owned by this owner instance.  See also
+    /// [`TCell::new`].
+    ///
+    /// [`TCell::new`]: struct.TCell.html
+    pub fn cell<T>(&self, value: T) -> TCell<Q, T> {
+        TCell::<Q, T>::new(value)
+    }
+
     /// Borrow contents of a `TCell` immutably.  Many `TCell`
     /// instances can be borrowed immutably at the same time from the
     /// same owner.
@@ -96,8 +104,9 @@ impl<Q: 'static> TCellOwner<Q> {
 /// [`TCellOwner`].
 ///
 /// To borrow from this cell, use the borrowing calls on the
-/// [`TCellOwner`] instance that was used to create it.  See [crate
-/// documentation](index.html).
+/// [`TCellOwner`] instance that shares the same marker type.
+///
+/// See also [crate documentation](index.html).
 ///
 /// [`TCellOwner`]: struct.TCellOwner.html
 pub struct TCell<Q, T> {
@@ -106,10 +115,10 @@ pub struct TCell<Q, T> {
 }
 
 impl<Q, T> TCell<Q, T> {
-    /// Create a new `TCell` owned for borrowing purposes by the given
-    /// `TCellOwner<Q>`
+    /// Create a new `TCell` owned for borrowing purposes by the
+    /// `TCellOwner` derived from the same marker type `Q`.
     #[inline]
-    pub const fn new(_owner: &TCellOwner<Q>, value: T) -> TCell<Q, T> {
+    pub const fn new(value: T) -> TCell<Q, T> {
         TCell {
             owner: PhantomData,
             value: UnsafeCell::new(value),
@@ -150,8 +159,8 @@ mod tests {
         type ACellOwner = TCellOwner<Marker>;
         type ACell<T> = TCell<Marker, T>;
         let mut owner = ACellOwner::new();
-        let c1 = ACell::new(&owner, 100u32);
-        let c2 = ACell::new(&owner, 200u32);
+        let c1 = ACell::new(100u32);
+        let c2 = owner.cell(200u32);
         (*owner.get_mut(&c1)) += 1;
         (*owner.get_mut(&c2)) += 2;
         let c1ref = owner.get(&c1);

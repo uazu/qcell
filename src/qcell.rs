@@ -2,7 +2,38 @@ use std::cell::UnsafeCell;
 use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
 use std::sync::Mutex;
 
-type QCellOwnerID = u32;
+type OwnerID = u32;
+
+/// Internal ID associated with a [`QCellOwner`].
+///
+/// The only purpose of this is to create [`QCell`] instances without
+/// requiring a borrow on the [`QCellOwner`].
+///
+/// Safety: Whilst the existence of this type does mean that an ID can
+/// exist longer than than the `QCellOwner`, all that allows is new
+/// `QCell` instances to be created after the `QCellOwner` has gone.
+/// But `QCell` instances can outlive the owner in any case, so this
+/// makes no difference to safety.
+///
+/// [`QCellOwner`]: struct.QCellOwner.html
+/// [`QCell`]: struct.QCell.html
+#[derive(Clone, Copy)]
+pub struct QCellOwnerID {
+    id: OwnerID,
+}
+
+impl QCellOwnerID {
+    /// Create a new cell owned by this owner-ID.  See also
+    /// [`QCell::new`].
+    ///
+    /// [`QCell::new`]: struct.QCell.html
+    pub fn cell<T>(&self, value: T) -> QCell<T> {
+        QCell {
+            value: UnsafeCell::new(value),
+            owner: self.id,
+        }
+    }
+}
 
 /// Borrowing-owner of zero or more [`QCell`](struct.QCell.html)
 /// instances.
@@ -11,13 +42,13 @@ type QCellOwnerID = u32;
 pub struct QCellOwner {
     // Reserve first half of range for safe version, second half for
     // unsafe version
-    id: QCellOwnerID,
+    id: OwnerID,
 }
 
 // Used to generate a unique QCellOwnerID number for each QCellOwner
 // with the `fast_new()` call.
 static FAST_QCELLOWNER_ID: AtomicUsize = ATOMIC_USIZE_INIT;
-const FAST_FIRST_ID: QCellOwnerID = 0x8000_0000;
+const FAST_FIRST_ID: OwnerID = 0x8000_0000;
 
 // Used to allocate temporally unique QCellOwnerID numbers for each
 // QCellOwner created with the slower `new()` call.  Expected pattern
@@ -27,8 +58,8 @@ const FAST_FIRST_ID: QCellOwnerID = 0x8000_0000;
 // process, possibly way more than 2^32.  So a free list suits this
 // pattern.
 struct SafeQCellOwnerIDSource {
-    free: Vec<u32>, // Free list
-    next: u32,
+    free: Vec<OwnerID>, // Free list
+    next: OwnerID,
 }
 lazy_static! {
     static ref SAFE_QCELLOWNER_ID: Mutex<SafeQCellOwnerIDSource> =
@@ -66,13 +97,14 @@ impl QCellOwner {
     /// because there will still be only one owner active at any one
     /// time with that ID.  Also it cannot be used maliciously to
     /// access cells which don't belong to the new caller, because you
-    /// also need access to the cells.  So for example if you have a
-    /// graph of cells that is only accessible through a private
-    /// structure, then someone else getting the same owner ID makes
-    /// no difference, because they have no way to get a reference to
-    /// those cells.  In any case, you are probably going to drop all
-    /// those cells at the same time as dropping the owner, because
-    /// they are no longer of any use without the owner ID.
+    /// also need a reference to the cells.  So for example if you
+    /// have a graph of cells that is only accessible through a
+    /// private structure, then someone else getting the same owner ID
+    /// makes no difference, because they have no way to get a
+    /// reference to those cells.  In any case, you are probably going
+    /// to drop all those cells at the same time as dropping the
+    /// owner, because they are no longer of any use without the owner
+    /// ID.
     pub fn new() -> Self {
         let mut src = SAFE_QCELLOWNER_ID.lock().unwrap();
         match src.free.pop() {
@@ -118,6 +150,21 @@ impl QCellOwner {
             // who gets which ID, just that they are different.
             id: FAST_QCELLOWNER_ID.fetch_add(1, Ordering::Relaxed) as u32 | FAST_FIRST_ID,
         }
+    }
+
+    /// Create a new cell owned by this owner instance.  See also
+    /// [`QCell::new`].
+    ///
+    /// [`QCell::new`]: struct.QCell.html
+    pub fn cell<T>(&self, value: T) -> QCell<T> {
+        QCellOwnerID { id: self.id }.cell(value)
+    }
+
+    /// Get the internal owner ID.  This may be used to create `QCell`
+    /// instances without needing a borrow on this structure, which is
+    /// useful if this structure is already borrowed.
+    pub fn id(&self) -> QCellOwnerID {
+        QCellOwnerID { id: self.id }
     }
 
     /// Borrow contents of a `QCell` immutably.  Many `QCell`
@@ -193,7 +240,7 @@ impl QCellOwner {
 ///
 /// [`QCellOwner`]: struct.QCellOwner.html
 pub struct QCell<T> {
-    owner: QCellOwnerID,
+    owner: OwnerID,
     value: UnsafeCell<T>,
 }
 
@@ -275,5 +322,22 @@ mod tests {
         assert_ne!(id1, id4, "Expected ID 1/4 to be different");
         assert_ne!(id2, id4, "Expected ID 2/4 to be different");
         assert_ne!(id3, id4, "Expected ID 3/4 to be different");
+    }
+
+    #[test]
+    fn qcell_sep_ids() {
+        let _lock = LOCK.lock().unwrap();
+        let owner1 = QCellOwner::new();
+        let owner2 = QCellOwner::new();
+        let id1 = owner1.id();
+        let id2 = owner2.id();
+        let c11 = id1.cell(1u32);
+        let c12 = id2.cell(2u32);
+        let c21 = owner1.cell(4u32);
+        let c22 = owner2.cell(8u32);
+        assert_eq!(
+            15,
+            owner1.get(&c11) + owner2.get(&c12) + owner1.get(&c21) + owner2.get(&c22)
+        );
     }
 }
