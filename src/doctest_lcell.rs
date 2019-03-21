@@ -29,8 +29,8 @@
 //! LCellOwner::scope(|mut owner1| {
 //!     LCellOwner::scope(|mut owner2| {
 //!         let c1 = Rc::new(LCell::new(100u32));
-//!         let c1ref1 = owner1.get(&c1);
-//!         let c1ref2 = owner2.get(&c1);   // Compile error
+//!         let c1ref1 = owner1.ro(&c1);
+//!         let c1ref2 = owner2.ro(&c1);   // Compile error
 //!         println!("{}", *c1ref2);
 //!     });
 //! });
@@ -45,7 +45,7 @@
 //! LCellOwner::scope(|mut owner1| {
 //!     LCellOwner::scope(|mut owner2| {
 //!         let c1 = Rc::new(owner1.cell(100u32));
-//!         let c1mutref2 = owner2.get_mut(&c1);    // Compile error
+//!         let c1mutref2 = owner2.rw(&c1);    // Compile error
 //!         println!("{}", *c1mutref2);
 //!     });
 //! });
@@ -61,14 +61,14 @@
 //!     let c1 = Rc::new(LCell::new(100u32));
 //!     let c2 = Rc::new(LCell::new(200u32));
 //!
-//!     let c1mutref = owner.get_mut(&c1);
-//!     let c2mutref = owner.get_mut(&c2);  // Compile error
+//!     let c1mutref = owner.rw(&c1);
+//!     let c2mutref = owner.rw(&c2);  // Compile error
 //!     *c1mutref += 1;
 //!     *c2mutref += 2;
 //! });
 //! ```
 //!
-//! However with `get_mut2()` you can do two mutable borrows at the
+//! However with `rw2()` you can do two mutable borrows at the
 //! same time, since this call checks at runtime that the two
 //! references don't refer to the same memory:
 //!
@@ -78,10 +78,10 @@
 //! LCellOwner::scope(|mut owner| {
 //!     let c1 = Rc::new(LCell::new(100u32));
 //!     let c2 = Rc::new(LCell::new(200u32));
-//!     let (c1mutref, c2mutref) = owner.get_mut2(&c1, &c2);
+//!     let (c1mutref, c2mutref) = owner.rw2(&c1, &c2);
 //!     *c1mutref += 1;
 //!     *c2mutref += 2;
-//!     assert_eq!(303, owner.get(&c1) + owner.get(&c2));   // Success!
+//!     assert_eq!(303, owner.ro(&c1) + owner.ro(&c2));   // Success!
 //! });
 //! ```
 //!
@@ -94,8 +94,8 @@
 //! LCellOwner::scope(|mut owner| {
 //!     let c1 = Rc::new(LCell::new(100u32));
 //!     let c2 = Rc::new(LCell::new(200u32));
-//!     let c1ref = owner.get(&c1);
-//!     let c1mutref = owner.get_mut(&c1);    // Compile error
+//!     let c1ref = owner.ro(&c1);
+//!     let c1mutref = owner.rw(&c1);    // Compile error
 //!     println!("{}", *c1ref);
 //! });
 //! ```
@@ -108,8 +108,8 @@
 //! LCellOwner::scope(|mut owner| {
 //!     let c1 = Rc::new(LCell::new(100u32));
 //!     let c2 = Rc::new(LCell::new(200u32));
-//!     let c1mutref = owner.get_mut(&c1);
-//!     let c2ref = owner.get(&c2);    // Compile error
+//!     let c1mutref = owner.rw(&c1);
+//!     let c2ref = owner.ro(&c2);    // Compile error
 //!     *c1mutref += 1;
 //! });
 //! ```
@@ -122,10 +122,10 @@
 //! LCellOwner::scope(|mut owner| {
 //!     let c1 = Rc::new(LCell::new(100u32));
 //!     let c2 = Rc::new(LCell::new(200u32));
-//!     let c1ref = owner.get(&c1);
-//!     let c2ref = owner.get(&c2);
-//!     let c1ref2 = owner.get(&c1);
-//!     let c2ref2 = owner.get(&c2);
+//!     let c1ref = owner.ro(&c1);
+//!     let c2ref = owner.ro(&c2);
+//!     let c1ref2 = owner.ro(&c1);
+//!     let c2ref2 = owner.ro(&c2);
 //!     assert_eq!(600, *c1ref + *c2ref + *c1ref2 + *c2ref2);   // Success!
 //! });
 //! ```
@@ -137,7 +137,7 @@
 //!# use std::rc::Rc;
 //! LCellOwner::scope(|mut owner| {
 //!     let c1 = Rc::new(LCell::new(100u32));
-//!     let c1ref = owner.get(&c1);
+//!     let c1ref = owner.ro(&c1);
 //!     drop(c1);    // Compile error
 //!     println!("{}", *c1ref);
 //! });
@@ -154,7 +154,7 @@
 //!     let c1 = Rc::new(LCell::new(100u32));
 //!     fn test(o: &mut LCellOwner) {}
 //!
-//!     let c1ref = owner.get(&c1);
+//!     let c1ref = owner.ro(&c1);
 //!     test(&mut owner);    // Compile error
 //!     println!("{}", *c1ref);
 //! });
@@ -169,7 +169,7 @@
 //!     let c1 = Rc::new(LCell::new(100u32));
 //!     fn test(o: &LCellOwner) {}
 //!
-//!     let c1mutref = owner.get_mut(&c1);
+//!     let c1mutref = owner.rw(&c1);
 //!     test(&owner);    // Compile error
 //!     *c1mutref += 1;
 //! });
@@ -184,11 +184,11 @@
 //! LCellOwner::scope(|mut owner| {
 //!     let c1 = Rc::new(LCell::new(100u32));
 //!     fn test<'id>(o: &mut LCellOwner<'id>, rc: &Rc<LCell<'id, u32>>) {
-//!        *o.get_mut(rc) += 1;
+//!        *o.rw(rc) += 1;
 //!     }
 //!
 //!     test(&mut owner, &c1);
-//!     let c1mutref = owner.get_mut(&c1);
+//!     let c1mutref = owner.rw(&c1);
 //!     *c1mutref += 1;
 //! });
 //! ```
@@ -201,11 +201,11 @@
 //!     let c1 = Rc::new(LCell::new(100u32));
 //!     let mut ct = Context { owner };
 //!     fn test<'id>(ct: &mut Context<'id>, rc: &Rc<LCell<'id, u32>>) {
-//!        *ct.owner.get_mut(rc) += 1;
+//!        *ct.owner.rw(rc) += 1;
 //!     }
 //!
 //!     test(&mut ct, &c1);
-//!     let c1mutref = ct.owner.get_mut(&c1);
+//!     let c1mutref = ct.owner.rw(&c1);
 //!     *c1mutref += 2;
 //! });
 //! ```

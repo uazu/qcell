@@ -167,21 +167,21 @@ impl QCellOwner {
         QCellOwnerID { id: self.id }
     }
 
-    /// Borrow contents of a `QCell` immutably.  Many `QCell`
-    /// instances can be borrowed immutably at the same time from the
-    /// same owner.  Panics if the `QCell` is not owned by this
-    /// `QCellOwner`.
-    pub fn get<'a, T>(&'a self, qc: &'a QCell<T>) -> &'a T {
+    /// Borrow contents of a `QCell` immutably (read-only).  Many
+    /// `QCell` instances can be borrowed immutably at the same time
+    /// from the same owner.  Panics if the `QCell` is not owned by
+    /// this `QCellOwner`.
+    pub fn ro<'a, T>(&'a self, qc: &'a QCell<T>) -> &'a T {
         assert_eq!(qc.owner, self.id, "QCell accessed with incorrect owner");
         unsafe { &*qc.value.get() }
     }
 
-    /// Borrow contents of a `QCell` mutably.  Only one `QCell` at a
-    /// time can be borrowed from the owner using this call.  The
-    /// returned reference must go out of scope before another can be
-    /// borrowed.  Panics if the `QCell` is not owned by this
-    /// `QCellOwner`.
-    pub fn get_mut<'a, T>(&'a mut self, qc: &'a QCell<T>) -> &'a mut T {
+    /// Borrow contents of a `QCell` mutably (read-write).  Only one
+    /// `QCell` at a time can be borrowed from the owner using this
+    /// call.  The returned reference must go out of scope before
+    /// another can be borrowed.  Panics if the `QCell` is not owned
+    /// by this `QCellOwner`.
+    pub fn rw<'a, T>(&'a mut self, qc: &'a QCell<T>) -> &'a mut T {
         assert_eq!(qc.owner, self.id, "QCell accessed with incorrect owner");
         unsafe { &mut *qc.value.get() }
     }
@@ -189,7 +189,7 @@ impl QCellOwner {
     /// Borrow contents of two `QCell` instances mutably.  Panics if
     /// the two `QCell` instances point to the same memory.  Panics if
     /// either `QCell` is not owned by this `QCellOwner`.
-    pub fn get_mut2<'a, T, U>(
+    pub fn rw2<'a, T, U>(
         &'a mut self,
         qc1: &'a QCell<T>,
         qc2: &'a QCell<U>,
@@ -198,7 +198,7 @@ impl QCellOwner {
         assert_eq!(qc2.owner, self.id, "QCell accessed with incorrect owner");
         assert_ne!(
             qc1 as *const _ as usize, qc2 as *const _ as usize,
-            "Illegal to borrow same QCell twice with get_mut2()"
+            "Illegal to borrow same QCell twice with rw2()"
         );
         unsafe { (&mut *qc1.value.get(), &mut *qc2.value.get()) }
     }
@@ -206,7 +206,7 @@ impl QCellOwner {
     /// Borrow contents of three `QCell` instances mutably.  Panics if
     /// any pair of `QCell` instances point to the same memory.
     /// Panics if any `QCell` is not owned by this `QCellOwner`.
-    pub fn get_mut3<'a, T, U, V>(
+    pub fn rw3<'a, T, U, V>(
         &'a mut self,
         qc1: &'a QCell<T>,
         qc2: &'a QCell<U>,
@@ -219,7 +219,7 @@ impl QCellOwner {
             (qc1 as *const _ as usize != qc2 as *const _ as usize)
                 && (qc2 as *const _ as usize != qc3 as *const _ as usize)
                 && (qc3 as *const _ as usize != qc1 as *const _ as usize),
-            "Illegal to borrow same QCell twice with get_mut3()"
+            "Illegal to borrow same QCell twice with rw3()"
         );
         unsafe {
             (
@@ -272,10 +272,10 @@ mod tests {
         let mut owner = QCellOwner::new();
         let c1 = QCell::new(&owner, 100u32);
         let c2 = QCell::new(&owner, 200u32);
-        (*owner.get_mut(&c1)) += 1;
-        (*owner.get_mut(&c2)) += 2;
-        let c1ref = owner.get(&c1);
-        let c2ref = owner.get(&c2);
+        (*owner.rw(&c1)) += 1;
+        (*owner.rw(&c2)) += 2;
+        let c1ref = owner.ro(&c1);
+        let c2ref = owner.ro(&c2);
         let total = *c1ref + *c2ref;
         assert_eq!(total, 303);
     }
@@ -337,7 +337,7 @@ mod tests {
         let c22 = owner2.cell(8u32);
         assert_eq!(
             15,
-            owner1.get(&c11) + owner2.get(&c12) + owner1.get(&c21) + owner2.get(&c22)
+            owner1.ro(&c11) + owner2.ro(&c12) + owner1.ro(&c21) + owner2.ro(&c22)
         );
     }
 }

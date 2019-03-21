@@ -52,7 +52,7 @@
 //! let mut owner_b = BCellOwner::new();
 //! let c1 = Rc::new(ACell::new(100u32));
 //!
-//! let c1ref = owner_b.get(&*c1);   // Compile error
+//! let c1ref = owner_b.ro(&*c1);   // Compile error
 //! println!("{}", *c1ref);
 //! ```
 //!
@@ -72,7 +72,7 @@
 //! let mut owner_b = BCellOwner::new();
 //! let c1 = Rc::new(ACell::new(100u32));
 //!
-//! let c1mutref = owner_b.get_mut(&*c1);    // Compile error
+//! let c1mutref = owner_b.rw(&*c1);    // Compile error
 //! println!("{}", *c1mutref);
 //! ```
 //!
@@ -89,13 +89,13 @@
 //! let c1 = Rc::new(ACell::new(100u32));
 //! let c2 = Rc::new(ACell::new(200u32));
 //!
-//! let c1mutref = owner.get_mut(&c1);
-//! let c2mutref = owner.get_mut(&c2);  // Compile error
+//! let c1mutref = owner.rw(&c1);
+//! let c2mutref = owner.rw(&c2);  // Compile error
 //! *c1mutref += 1;
 //! *c2mutref += 2;
 //! ```
 //!
-//! However with `get_mut2()` you can do two mutable borrows at the
+//! However with `rw2()` you can do two mutable borrows at the
 //! same time, since this call checks at runtime that the two
 //! references don't refer to the same memory:
 //!
@@ -108,10 +108,10 @@
 //!# let mut owner = ACellOwner::new();
 //!# let c1 = Rc::new(ACell::new(100u32));
 //!# let c2 = Rc::new(ACell::new(200u32));
-//! let (c1mutref, c2mutref) = owner.get_mut2(&c1, &c2);
+//! let (c1mutref, c2mutref) = owner.rw2(&c1, &c2);
 //! *c1mutref += 1;
 //! *c2mutref += 2;
-//! assert_eq!(303, owner.get(&c1) + owner.get(&c2));   // Success!
+//! assert_eq!(303, owner.ro(&c1) + owner.ro(&c2));   // Success!
 //! ```
 //!
 //! You can't have a mutable borrow at the same time as an immutable
@@ -126,8 +126,8 @@
 //!# let mut owner = ACellOwner::new();
 //!# let c1 = Rc::new(ACell::new(100u32));
 //!# let c2 = Rc::new(ACell::new(200u32));
-//! let c1ref = owner.get(&c1);
-//! let c1mutref = owner.get_mut(&c1);    // Compile error
+//! let c1ref = owner.ro(&c1);
+//! let c1mutref = owner.rw(&c1);    // Compile error
 //! println!("{}", *c1ref);
 //! ```
 //!
@@ -142,8 +142,8 @@
 //!# let mut owner = ACellOwner::new();
 //!# let c1 = Rc::new(ACell::new(100u32));
 //!# let c2 = Rc::new(ACell::new(200u32));
-//! let c1mutref = owner.get_mut(&c1);
-//! let c2ref = owner.get(&c2);    // Compile error
+//! let c1mutref = owner.rw(&c1);
+//! let c2ref = owner.ro(&c2);    // Compile error
 //! *c1mutref += 1;
 //! ```
 //!
@@ -158,10 +158,10 @@
 //!# let mut owner = ACellOwner::new();
 //!# let c1 = Rc::new(ACell::new(100u32));
 //!# let c2 = Rc::new(ACell::new(200u32));
-//! let c1ref = owner.get(&c1);
-//! let c2ref = owner.get(&c2);
-//! let c1ref2 = owner.get(&c1);
-//! let c2ref2 = owner.get(&c2);
+//! let c1ref = owner.ro(&c1);
+//! let c2ref = owner.ro(&c2);
+//! let c1ref2 = owner.ro(&c1);
+//! let c2ref2 = owner.ro(&c2);
 //! assert_eq!(600, *c1ref + *c2ref + *c1ref2 + *c2ref2);   // Success!
 //! ```
 //!
@@ -176,7 +176,7 @@
 //!# let mut owner = ACellOwner::new();
 //!# let c1 = Rc::new(ACell::new(100u32));
 //!# let c2 = Rc::new(ACell::new(200u32));
-//! let c1ref = owner.get(&c1);
+//! let c1ref = owner.ro(&c1);
 //! drop(c1);    // Compile error
 //! println!("{}", *c1ref);
 //! ```
@@ -196,7 +196,7 @@
 //!# let c2 = Rc::new(ACell::new(200u32));
 //! fn test(o: &mut ACellOwner) {}
 //!
-//! let c1ref = owner.get(&c1);
+//! let c1ref = owner.ro(&c1);
 //! test(&mut owner);    // Compile error
 //! println!("{}", *c1ref);
 //! ```
@@ -214,7 +214,7 @@
 //!# let c2 = Rc::new(ACell::new(200u32));
 //! fn test(o: &ACellOwner) {}
 //!
-//! let c1mutref = owner.get_mut(&c1);
+//! let c1mutref = owner.rw(&c1);
 //! test(&owner);    // Compile error
 //! *c1mutref += 1;
 //! ```

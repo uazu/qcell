@@ -74,12 +74,12 @@
 //! let mut owner = QCellOwner::new();
 //!
 //! let item = Rc::new(QCell::new(&owner, Vec::<u8>::new()));
-//! let iref = owner.get_mut(&item);
+//! let iref = owner.rw(&item);
 //! test(&mut owner, &item);    // Compile error
 //! iref.push(1);
 //!
 //! fn test(owner: &mut QCellOwner, item: &Rc<QCell<Vec<u8>>>) {
-//!     owner.get_mut(&item).push(2);
+//!     owner.rw(&item).push(2);
 //! }
 //! ```
 //!
@@ -99,12 +99,12 @@
 //! let mut owner = ACellOwner::new();
 //!
 //! let item = Rc::new(ACell::new(Vec::<u8>::new()));
-//! let iref = owner.get_mut(&item);
+//! let iref = owner.rw(&item);
 //! iref.push(1);
 //! test(&mut owner, &item);
 //!
 //! fn test(owner: &mut ACellOwner, item: &Rc<ACell<Vec<u8>>>) {
-//!     owner.get_mut(&item).push(2);
+//!     owner.rw(&item).push(2);
 //! }
 //! ```
 //!
@@ -115,13 +115,13 @@
 //!# use std::rc::Rc;
 //! LCellOwner::scope(|mut owner| {
 //!   let item = Rc::new(LCell::new(Vec::<u8>::new()));
-//!   let iref = owner.get_mut(&item);
+//!   let iref = owner.rw(&item);
 //!   iref.push(1);
 //!   test(&mut owner, &item);
 //! });
 //!
 //! fn test<'id>(owner: &mut LCellOwner<'id>, item: &Rc<LCell<'id, Vec<u8>>>) {
-//!     owner.get_mut(&item).push(2);
+//!     owner.rw(&item).push(2);
 //! }
 //! ```
 //!
@@ -226,9 +226,9 @@
 //! Cell | Cell immutable borrow | Cell mutable borrow
 //! ---|---|---
 //! `RefCell` | `cell.borrow()` | `cell.borrow_mut()`
-//! `QCell` | `owner.get(&cell)` | `owner.get_mut(&cell)`
-//! `TCell` | `owner.get(&cell)` | `owner.get_mut(&cell)`
-//! `LCell` | `owner.get(&cell)` | `owner.get_mut(&cell)`
+//! `QCell` | `owner.ro(&cell)` | `owner.rw(&cell)`
+//! `TCell` | `owner.ro(&cell)` | `owner.rw(&cell)`
+//! `LCell` | `owner.ro(&cell)` | `owner.rw(&cell)`
 //!
 //! # Origin of names
 //!

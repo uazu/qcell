@@ -48,34 +48,34 @@ impl<'id> LCellOwner<'id> {
         LCell::<T>::new(value)
     }
 
-    /// Borrow contents of a `LCell` immutably.  Many `LCell`
-    /// instances can be borrowed immutably at the same time from the
-    /// same owner.
+    /// Borrow contents of a `LCell` immutably (read-only).  Many
+    /// `LCell` instances can be borrowed immutably at the same time
+    /// from the same owner.
     #[inline]
-    pub fn get<'a, T>(&'a self, lc: &'a LCell<'id, T>) -> &'a T {
+    pub fn ro<'a, T>(&'a self, lc: &'a LCell<'id, T>) -> &'a T {
         unsafe { &*lc.value.get() }
     }
 
-    /// Borrow contents of a `LCell` mutably.  Only one `LCell` at a
-    /// time can be borrowed from the owner using this call.  The
-    /// returned reference must go out of scope before another can be
-    /// borrowed.
+    /// Borrow contents of a `LCell` mutably (read-write).  Only one
+    /// `LCell` at a time can be borrowed from the owner using this
+    /// call.  The returned reference must go out of scope before
+    /// another can be borrowed.
     #[inline]
-    pub fn get_mut<'a, T>(&'a mut self, lc: &'a LCell<'id, T>) -> &'a mut T {
+    pub fn rw<'a, T>(&'a mut self, lc: &'a LCell<'id, T>) -> &'a mut T {
         unsafe { &mut *lc.value.get() }
     }
 
     /// Borrow contents of two `LCell` instances mutably.  Panics if
     /// the two `LCell` instances point to the same memory.
     #[inline]
-    pub fn get_mut2<'a, T, U>(
+    pub fn rw2<'a, T, U>(
         &'a mut self,
         lc1: &'a LCell<'id, T>,
         lc2: &'a LCell<'id, U>,
     ) -> (&'a mut T, &'a mut U) {
         assert!(
             lc1 as *const _ as usize != lc2 as *const _ as usize,
-            "Illegal to borrow same LCell twice with get_mut2()"
+            "Illegal to borrow same LCell twice with rw2()"
         );
         unsafe { (&mut *lc1.value.get(), &mut *lc2.value.get()) }
     }
@@ -83,7 +83,7 @@ impl<'id> LCellOwner<'id> {
     /// Borrow contents of three `LCell` instances mutably.  Panics if
     /// any pair of `LCell` instances point to the same memory.
     #[inline]
-    pub fn get_mut3<'a, T, U, V>(
+    pub fn rw3<'a, T, U, V>(
         &'a mut self,
         lc1: &'a LCell<'id, T>,
         lc2: &'a LCell<'id, U>,
@@ -93,7 +93,7 @@ impl<'id> LCellOwner<'id> {
             (lc1 as *const _ as usize != lc2 as *const _ as usize)
                 && (lc2 as *const _ as usize != lc3 as *const _ as usize)
                 && (lc3 as *const _ as usize != lc1 as *const _ as usize),
-            "Illegal to borrow same LCell twice with get_mut3()"
+            "Illegal to borrow same LCell twice with rw3()"
         );
         unsafe {
             (
@@ -143,10 +143,10 @@ mod tests {
         LCellOwner::scope(|mut owner| {
             let c1 = LCell::new(100u32);
             let c2 = owner.cell(200u32);
-            (*owner.get_mut(&c1)) += 1;
-            (*owner.get_mut(&c2)) += 2;
-            let c1ref = owner.get(&c1);
-            let c2ref = owner.get(&c2);
+            (*owner.rw(&c1)) += 1;
+            (*owner.rw(&c2)) += 2;
+            let c1ref = owner.ro(&c1);
+            let c2ref = owner.ro(&c2);
             let total = *c1ref + *c2ref;
             assert_eq!(total, 303);
         });
@@ -154,10 +154,10 @@ mod tests {
 
     #[test]
     #[should_panic]
-    fn lcell_get_mut2() {
+    fn lcell_rw2() {
         LCellOwner::scope(|mut owner| {
             let c1 = Rc::new(LCell::new(100u32));
-            let (mutref1, mutref2) = owner.get_mut2(&c1, &c1);
+            let (mutref1, mutref2) = owner.rw2(&c1, &c1);
             *mutref1 += 1;
             *mutref2 += 1;
         });
@@ -165,24 +165,11 @@ mod tests {
 
     #[test]
     #[should_panic]
-    fn lcell_get_mut3_1() {
+    fn lcell_rw3_1() {
         LCellOwner::scope(|mut owner| {
             let c1 = Rc::new(LCell::new(100u32));
             let c2 = Rc::new(LCell::new(200u32));
-            let (mutref1, mutref2, mutref3) = owner.get_mut3(&c1, &c1, &c2);
-            *mutref1 += 1;
-            *mutref2 += 1;
-            *mutref3 += 1;
-        });
-    }
-
-    #[test]
-    #[should_panic]
-    fn lcell_get_mut3_2() {
-        LCellOwner::scope(|mut owner| {
-            let c1 = Rc::new(LCell::new(100u32));
-            let c2 = Rc::new(LCell::new(200u32));
-            let (mutref1, mutref2, mutref3) = owner.get_mut3(&c1, &c2, &c1);
+            let (mutref1, mutref2, mutref3) = owner.rw3(&c1, &c1, &c2);
             *mutref1 += 1;
             *mutref2 += 1;
             *mutref3 += 1;
@@ -191,11 +178,24 @@ mod tests {
 
     #[test]
     #[should_panic]
-    fn lcell_get_mut3_3() {
+    fn lcell_rw3_2() {
         LCellOwner::scope(|mut owner| {
             let c1 = Rc::new(LCell::new(100u32));
             let c2 = Rc::new(LCell::new(200u32));
-            let (mutref1, mutref2, mutref3) = owner.get_mut3(&c2, &c1, &c1);
+            let (mutref1, mutref2, mutref3) = owner.rw3(&c1, &c2, &c1);
+            *mutref1 += 1;
+            *mutref2 += 1;
+            *mutref3 += 1;
+        });
+    }
+
+    #[test]
+    #[should_panic]
+    fn lcell_rw3_3() {
+        LCellOwner::scope(|mut owner| {
+            let c1 = Rc::new(LCell::new(100u32));
+            let c2 = Rc::new(LCell::new(200u32));
+            let (mutref1, mutref2, mutref3) = owner.rw3(&c2, &c1, &c1);
             *mutref1 += 1;
             *mutref2 += 1;
             *mutref3 += 1;

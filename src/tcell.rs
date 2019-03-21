@@ -43,34 +43,34 @@ impl<Q: 'static> TCellOwner<Q> {
         TCell::<Q, T>::new(value)
     }
 
-    /// Borrow contents of a `TCell` immutably.  Many `TCell`
-    /// instances can be borrowed immutably at the same time from the
-    /// same owner.
+    /// Borrow contents of a `TCell` immutably (read-only).  Many
+    /// `TCell` instances can be borrowed immutably at the same time
+    /// from the same owner.
     #[inline]
-    pub fn get<'a, T>(&'a self, tc: &'a TCell<Q, T>) -> &'a T {
+    pub fn ro<'a, T>(&'a self, tc: &'a TCell<Q, T>) -> &'a T {
         unsafe { &*tc.value.get() }
     }
 
-    /// Borrow contents of a `TCell` mutably.  Only one `TCell` at a
-    /// time can be borrowed from the owner using this call.  The
-    /// returned reference must go out of scope before another can be
-    /// borrowed.
+    /// Borrow contents of a `TCell` mutably (read-write).  Only one
+    /// `TCell` at a time can be borrowed from the owner using this
+    /// call.  The returned reference must go out of scope before
+    /// another can be borrowed.
     #[inline]
-    pub fn get_mut<'a, T>(&'a mut self, tc: &'a TCell<Q, T>) -> &'a mut T {
+    pub fn rw<'a, T>(&'a mut self, tc: &'a TCell<Q, T>) -> &'a mut T {
         unsafe { &mut *tc.value.get() }
     }
 
     /// Borrow contents of two `TCell` instances mutably.  Panics if
     /// the two `TCell` instances point to the same memory.
     #[inline]
-    pub fn get_mut2<'a, T, U>(
+    pub fn rw2<'a, T, U>(
         &'a mut self,
         tc1: &'a TCell<Q, T>,
         tc2: &'a TCell<Q, U>,
     ) -> (&'a mut T, &'a mut U) {
         assert!(
             tc1 as *const _ as usize != tc2 as *const _ as usize,
-            "Illegal to borrow same TCell twice with get_mut2()"
+            "Illegal to borrow same TCell twice with rw2()"
         );
         unsafe { (&mut *tc1.value.get(), &mut *tc2.value.get()) }
     }
@@ -78,7 +78,7 @@ impl<Q: 'static> TCellOwner<Q> {
     /// Borrow contents of three `TCell` instances mutably.  Panics if
     /// any pair of `TCell` instances point to the same memory.
     #[inline]
-    pub fn get_mut3<'a, T, U, V>(
+    pub fn rw3<'a, T, U, V>(
         &'a mut self,
         tc1: &'a TCell<Q, T>,
         tc2: &'a TCell<Q, U>,
@@ -88,7 +88,7 @@ impl<Q: 'static> TCellOwner<Q> {
             (tc1 as *const _ as usize != tc2 as *const _ as usize)
                 && (tc2 as *const _ as usize != tc3 as *const _ as usize)
                 && (tc3 as *const _ as usize != tc1 as *const _ as usize),
-            "Illegal to borrow same TCell twice with get_mut3()"
+            "Illegal to borrow same TCell twice with rw3()"
         );
         unsafe {
             (
@@ -161,10 +161,10 @@ mod tests {
         let mut owner = ACellOwner::new();
         let c1 = ACell::new(100u32);
         let c2 = owner.cell(200u32);
-        (*owner.get_mut(&c1)) += 1;
-        (*owner.get_mut(&c2)) += 2;
-        let c1ref = owner.get(&c1);
-        let c2ref = owner.get(&c2);
+        (*owner.rw(&c1)) += 1;
+        (*owner.rw(&c2)) += 2;
+        let c1ref = owner.ro(&c1);
+        let c2ref = owner.ro(&c2);
         let total = *c1ref + *c2ref;
         assert_eq!(total, 303);
     }
