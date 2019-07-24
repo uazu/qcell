@@ -194,4 +194,46 @@ mod tests {
         let total = *c1ref + *c2ref;
         assert_eq!(total, 303);
     }
+
+    #[cfg(feature = "no-thread-local")]
+    #[test]
+    #[should_panic]
+    fn tcell_threads() {
+        struct Marker;
+        type ACellOwner = TCellOwner<Marker>;
+        let mut _owner1 = ACellOwner::new();
+        std::thread::spawn(|| {
+            let mut _owner2 = ACellOwner::new(); // Panics here
+        })
+        .join()
+        .unwrap();
+    }
+
+    #[cfg(not(feature = "no-thread-local"))]
+    #[test]
+    fn tcell_threads() {
+        struct Marker;
+        type ACellOwner = TCellOwner<Marker>;
+        let mut _owner1 = ACellOwner::new();
+        std::thread::spawn(|| {
+            let mut _owner2 = ACellOwner::new();
+        })
+        .join()
+        .unwrap();
+    }
+
+    #[cfg(not(feature = "no-thread-local"))]
+    #[test]
+    #[should_panic]
+    fn tcell_threads_2() {
+        struct Marker;
+        type ACellOwner = TCellOwner<Marker>;
+        let mut _owner1 = ACellOwner::new();
+        std::thread::spawn(|| {
+            let mut _owner2 = ACellOwner::new();
+            let mut _owner3 = ACellOwner::new(); // Panics here
+        })
+        .join()
+        .unwrap();
+    }
 }
