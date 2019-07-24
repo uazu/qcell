@@ -184,8 +184,9 @@
 //! - Pro: No overhead at runtime for borrowing or ownership checks
 //! - Pro: No cell space overhead
 //! - Con: Can only borrow up to 3 objects at a time
-//! - Con: Uses singletons, so reusable code must be parameterised
-//! with an external marker type
+//! - Con: Uses per-thread singletons, meaning only one owner is
+//! allowed per thread per marker type.  Code intended to be nested on
+//! the call stack must be parameterised with an external marker type.
 //!
 //! [`LCell`] pros and cons:
 //!

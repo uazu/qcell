@@ -11,7 +11,10 @@ type Id<'id> = PhantomData<Cell<&'id mut ()>>;
 ///
 /// This based around creating an invariant lifetime within the
 /// closure, which is different to any other Rust lifetime thanks to
-/// the techniques explained in 2015 in [this Reddit
+/// the techniques explained in various sources: section 6.3 of [this
+/// thesis from
+/// Gankro](https://raw.githubusercontent.com/Gankro/thesis/master/thesis.pdf),
+/// [this Reddit
 /// post](https://www.reddit.com/r/rust/comments/3oo0oe/sound_unchecked_indexing_with_lifetimebased_value/),
 /// and [this Rust playground
 /// example](https://play.rust-lang.org/?gist=21a00b0e181a918f8ca4&version=stable).

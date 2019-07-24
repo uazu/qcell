@@ -1,5 +1,5 @@
 use std::cell::UnsafeCell;
-use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
 
 type OwnerID = u32;
@@ -47,7 +47,7 @@ pub struct QCellOwner {
 
 // Used to generate a unique QCellOwnerID number for each QCellOwner
 // with the `fast_new()` call.
-static FAST_QCELLOWNER_ID: AtomicUsize = ATOMIC_USIZE_INIT;
+static FAST_QCELLOWNER_ID: AtomicUsize = AtomicUsize::new(0);
 const FAST_FIRST_ID: OwnerID = 0x8000_0000;
 
 // Used to allocate temporally unique QCellOwnerID numbers for each
@@ -82,12 +82,12 @@ impl QCellOwner {
     /// Create an owner that can be used for creating many `QCell`
     /// instances.  It will have a temporally unique ID associated
     /// with it to detect using the wrong owner to access a cell at
-    /// runtime, which is a programming error.  This is the slow and safe
-    /// version that uses a mutex and a free list to allocate IDs.  If
-    /// speed of this call matters, then consider using
-    /// [`fast_new()`](#method.fast_new) instead.  This call will
-    /// panic if the limit of 2^31 owners active at the same time is
-    /// reached.
+    /// runtime, which is a programming error.  This call will panic
+    /// if the limit of 2^31 owners active at the same time is
+    /// reached.  This is the slow and safe version that uses a mutex
+    /// and a free list to allocate IDs.  If speed of this call
+    /// matters, then consider using [`fast_new()`](#method.fast_new)
+    /// instead.
     ///
     /// This safe version does successfully defend against all
     /// malicious and unsafe use, as far as I am aware.  If not,

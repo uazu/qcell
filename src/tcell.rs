@@ -2,10 +2,16 @@ use std::any::TypeId;
 use std::cell::UnsafeCell;
 use std::collections::HashSet;
 use std::marker::PhantomData;
-use std::sync::Mutex;
 
+#[cfg(feature = "no-thread-local")]
 lazy_static! {
-    static ref SINGLETON_CHECK: Mutex<HashSet<TypeId>> = Mutex::new(HashSet::new());
+    static ref SINGLETON_CHECK: std::sync::Mutex<HashSet<TypeId>> =
+        std::sync::Mutex::new(HashSet::new());
+}
+
+#[cfg(not(feature = "no-thread-local"))]
+std::thread_local! {
+    static SINGLETON_CHECK: std::cell::RefCell<HashSet<TypeId>> = std::cell::RefCell::new(HashSet::new());
 }
 
 /// Borrowing-owner of zero or more [`TCell`](struct.TCell.html)
@@ -13,25 +19,42 @@ lazy_static! {
 ///
 /// See [crate documentation](index.html).
 pub struct TCellOwner<Q: 'static> {
-    typ: PhantomData<Q>,
+    // Use *const to disable Send and Sync
+    typ: PhantomData<*const Q>,
 }
 
 impl<Q: 'static> Drop for TCellOwner<Q> {
     fn drop(&mut self) {
+        #[cfg(feature = "no-thread-local")]
         SINGLETON_CHECK.lock().unwrap().remove(&TypeId::of::<Q>());
+        #[cfg(not(feature = "no-thread-local"))]
+        SINGLETON_CHECK.with(|set| set.borrow_mut().remove(&TypeId::of::<Q>()));
     }
 }
 
 impl<Q: 'static> TCellOwner<Q> {
-    /// Create the singleton owner instance.  There may only be one
-    /// instance of this type at any time for each different marker
-    /// type `Q`.  This call panics if another instance is created.
-    /// This may be used for creating many `TCell` instances.
+    /// Create the singleton owner instance.  Each owner may be used
+    /// to create many `TCell` instances.  There may be only one
+    /// instance of this type per thread at any given time for each
+    /// different marker type `Q`.  This call panics if a second
+    /// simultaneous instance is created.  Since the owner is only
+    /// valid to use in the thread it is created in, it does not
+    /// support `Send` or `Sync`.
+    ///
+    /// If the "no-thread-local" feature is enabled, then only one
+    /// instance per marker type is permitted across the whole process
+    /// (instead of per-thread).
     pub fn new() -> Self {
+        #[cfg(feature = "no-thread-local")]
         assert!(
             SINGLETON_CHECK.lock().unwrap().insert(TypeId::of::<Q>()),
             "Illegal to create two TCellOwner instances with the same marker type parameter"
         );
+        #[cfg(not(feature = "no-thread-local"))]
+        SINGLETON_CHECK.with(|set| {
+            assert!(set.borrow_mut().insert(TypeId::of::<Q>()),
+                    "Illegal to create two TCellOwner instances within the same thread with the same marker type parameter");
+        });
         Self { typ: PhantomData }
     }
 
@@ -104,13 +127,16 @@ impl<Q: 'static> TCellOwner<Q> {
 /// [`TCellOwner`].
 ///
 /// To borrow from this cell, use the borrowing calls on the
-/// [`TCellOwner`] instance that shares the same marker type.
+/// [`TCellOwner`] instance that shares the same marker type.  Since
+/// there may be another indistinguishable [`TCellOwner`] in another
+/// thread, `Send` and `Sync` is not supported for this type.
 ///
 /// See also [crate documentation](index.html).
 ///
 /// [`TCellOwner`]: struct.TCellOwner.html
 pub struct TCell<Q, T> {
-    owner: PhantomData<Q>,
+    // Use *const to disable Send and Sync
+    owner: PhantomData<*const Q>,
     value: UnsafeCell<T>,
 }
 

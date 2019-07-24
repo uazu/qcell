@@ -1,0 +1,4 @@
+#!/bin/bash
+
+cargo test &&
+cargo test --features no-thread-local

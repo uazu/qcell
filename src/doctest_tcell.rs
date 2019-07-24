@@ -36,6 +36,39 @@
 //! let owner2 = owner1.clone();  // Compile fail
 //! ```
 //!
+//! TCellOwner shouldn't be `Send` or `Sync`, because it is only valid
+//! in one thread:
+//!
+//! ```compile_fail
+//!# use qcell::TCellOwner;
+//! struct Marker;
+//! fn is_send<T: Send>() {}
+//! is_send::<TCellOwner<Marker>>();  // Compile fail
+//! ```
+//!
+//! ```compile_fail
+//!# use qcell::TCellOwner;
+//! struct Marker;
+//! fn is_sync<T: Sync>() {}
+//! is_sync::<TCellOwner<Marker>>();  // Compile fail
+//! ```
+//!
+//! TCell also shouldn't be `Send` or `Sync`:
+//!
+//! ```compile_fail
+//!# use qcell::TCell;
+//! struct Marker;
+//! fn is_send<T: Send>() {}
+//! is_send::<TCell<Marker, ()>>();  // Compile fail
+//! ```
+//!
+//! ```compile_fail
+//!# use qcell::TCell;
+//! struct Marker;
+//! fn is_sync<T: Sync>() {}
+//! is_sync::<TCell<Marker, ()>>();  // Compile fail
+//! ```
+//!
 //! Two different owners can't borrow each other's cells immutably:
 //!
 //! ```compile_fail
