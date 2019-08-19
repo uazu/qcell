@@ -152,6 +152,19 @@ impl<Q, T> TCell<Q, T> {
     }
 }
 
+// TCell absolutely cannot be Sync, since otherwise you could send
+// two &TCell's to two different threads, that each have their own
+// TCellOwner<Q> instance and that could therefore both give out
+// a &mut T to the same T.
+//
+// However, it's fine to Send a TCell to a different thread, because
+// you can only send something if nothing borrows it, so nothing can
+// be accessing its contents. After sending the TCell, the original
+// TCellOwner can no longer give access to the TCell's contents since
+// TCellOwner is !Send + !Sync. Only the TCellOwner of the new thread
+// can give access to this TCell's contents now.
+unsafe impl<Q, T> Send for TCell<Q, T> {}
+
 #[cfg(test)]
 mod tests {
     use super::{TCell, TCellOwner};

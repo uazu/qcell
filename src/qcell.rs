@@ -244,6 +244,24 @@ pub struct QCell<T> {
     value: UnsafeCell<T>,
 }
 
+// QCell already automatically implements Send, but not Sync.
+// We can add this implementation though, since it's fine to
+// send a &QCell to another thread, and even mutably borrow the value
+// there, as long as T is Send and Sync.
+//
+// The reason why QCell<T>'s impl of Sync requires T: Send + Sync
+// instead of just T: Sync is that QCell provides interior mutability.
+// If you send a &QCell<T> (and its owner) to a different thread, you
+// can call .rw() to get a &mut T, and use std::mem::swap() to move
+// the T, effectively sending the T to that other thread. That's not
+// allowed if T: !Send.
+//
+// Note that the bounds on T for QCell<T>'s impl of Sync are the same
+// as those of std::sync::RwLock<T>. That's not a coincidence.
+// The way these types let you access T concurrently is the same,
+// even though the locking mechanisms are different.
+unsafe impl<T: Send + Sync> Sync for QCell<T> {}
+
 impl<T> QCell<T> {
     /// Create a new `QCell` owned for borrowing purposes by the given
     /// `QCellOwner`
