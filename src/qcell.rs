@@ -27,7 +27,7 @@ impl QCellOwnerID {
     /// [`QCell::new`].
     ///
     /// [`QCell::new`]: struct.QCell.html
-    pub fn cell<T>(&self, value: T) -> QCell<T> {
+    pub fn cell<T>(self, value: T) -> QCell<T> {
         QCell {
             value: UnsafeCell::new(value),
             owner: self.id,
@@ -75,6 +75,12 @@ impl Drop for QCellOwner {
         if self.id < FAST_FIRST_ID {
             SAFE_QCELLOWNER_ID.lock().unwrap().free.push(self.id);
         }
+    }
+}
+
+impl Default for QCellOwner {
+    fn default() -> Self {
+        QCellOwner::new()
     }
 }
 

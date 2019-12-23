@@ -1,37 +1,40 @@
-//! This tests the `TCell` implementation.
+// Run ./update-compiletest-from-doctest.pl in crate base directory
+// after making any modification to compile_fail tests here.
+
+//! This tests the `TLCell` implementation.
 //!
 //! It's not possible to have two simultaneous owners for the same
 //! marker type:
 //!
 //! ```should_panic
-//!# use qcell::{TCell, TCellOwner};
+//!# use qcell::{TLCell, TLCellOwner};
 //!# use std::rc::Rc;
 //! struct Marker;
-//! type ACellOwner = TCellOwner<Marker>;
+//! type ACellOwner = TLCellOwner<Marker>;
 //! let mut owner1 = ACellOwner::new();
 //! let mut owner2 = ACellOwner::new();  // Panics here
 //! ```
 //!
-//! It should be impossible to copy a `TCellOwner`:
+//! It should be impossible to copy a `TLCellOwner`:
 //!
 //! ```compile_fail
-//!# use qcell::{TCell, TCellOwner};
+//!# use qcell::{TLCell, TLCellOwner};
 //!# use std::rc::Rc;
 //!# struct Marker;
-//! type ACell<T> = TCell<Marker, T>;
-//! type ACellOwner = TCellOwner<Marker>;
+//! type ACell<T> = TLCell<Marker, T>;
+//! type ACellOwner = TLCellOwner<Marker>;
 //! let mut owner1 = ACellOwner::new();
 //! let mut owner2 = owner1;
 //! let rc = Rc::new(owner1.cell(100u32));  // Compile fail
 //! ```
 //!
-//! It should be impossible to clone a `TCellOwner`:
+//! It should be impossible to clone a `TLCellOwner`:
 //!
 //! ```compile_fail
-//!# use qcell::{TCell, TCellOwner};
+//!# use qcell::{TLCell, TLCellOwner};
 //!# use std::rc::Rc;
 //!# struct Marker;
-//!# type ACellOwner = TCellOwner<Marker>;
+//!# type ACellOwner = TLCellOwner<Marker>;
 //! let mut owner1 = ACellOwner::new();
 //! let owner2 = owner1.clone();  // Compile fail
 //! ```
@@ -39,14 +42,14 @@
 //! Two different owners can't borrow each other's cells immutably:
 //!
 //! ```compile_fail
-//!# use qcell::{TCell, TCellOwner};
+//!# use qcell::{TLCell, TLCellOwner};
 //!# use std::rc::Rc;
 //! struct MarkerA;
-//! type ACellOwner = TCellOwner<MarkerA>;
-//! type ACell<T> = TCell<MarkerA, T>;
+//! type ACellOwner = TLCellOwner<MarkerA>;
+//! type ACell<T> = TLCell<MarkerA, T>;
 //! struct MarkerB;
-//! type BCellOwner = TCellOwner<MarkerB>;
-//! type BCell<T> = TCell<MarkerB, T>;
+//! type BCellOwner = TLCellOwner<MarkerB>;
+//! type BCell<T> = TLCell<MarkerB, T>;
 //!
 //! let mut owner_a = ACellOwner::new();
 //! let mut owner_b = BCellOwner::new();
@@ -59,14 +62,14 @@
 //! Or mutably:
 //!
 //! ```compile_fail
-//!# use qcell::{TCell, TCellOwner};
+//!# use qcell::{TLCell, TLCellOwner};
 //!# use std::rc::Rc;
 //!# struct MarkerA;
-//!# type ACellOwner = TCellOwner<MarkerA>;
-//!# type ACell<T> = TCell<MarkerA, T>;
+//!# type ACellOwner = TLCellOwner<MarkerA>;
+//!# type ACell<T> = TLCell<MarkerA, T>;
 //!# struct MarkerB;
-//!# type BCellOwner = TCellOwner<MarkerB>;
-//!# type BCell<T> = TCell<MarkerB, T>;
+//!# type BCellOwner = TLCellOwner<MarkerB>;
+//!# type BCell<T> = TLCell<MarkerB, T>;
 //! let mut owner_a = ACellOwner::new();
 //! let mut owner_b = BCellOwner::new();
 //! let c1 = Rc::new(ACell::new(100u32));
@@ -79,11 +82,11 @@
 //! owner at the same time:
 //!
 //! ```compile_fail
-//!# use qcell::{TCell, TCellOwner};
+//!# use qcell::{TLCell, TLCellOwner};
 //!# use std::rc::Rc;
 //!# struct Marker;
-//!# type ACellOwner = TCellOwner<Marker>;
-//!# type ACell<T> = TCell<Marker, T>;
+//!# type ACellOwner = TLCellOwner<Marker>;
+//!# type ACell<T> = TLCell<Marker, T>;
 //! let mut owner = ACellOwner::new();
 //! let c1 = Rc::new(ACell::new(100u32));
 //! let c2 = Rc::new(ACell::new(200u32));
@@ -99,11 +102,11 @@
 //! references don't refer to the same memory:
 //!
 //! ```
-//!# use qcell::{TCell, TCellOwner};
+//!# use qcell::{TLCell, TLCellOwner};
 //!# use std::rc::Rc;
 //!# struct Marker;
-//!# type ACellOwner = TCellOwner<Marker>;
-//!# type ACell<T> = TCell<Marker, T>;
+//!# type ACellOwner = TLCellOwner<Marker>;
+//!# type ACell<T> = TLCell<Marker, T>;
 //!# let mut owner = ACellOwner::new();
 //! let c1 = Rc::new(ACell::new(100u32));
 //! let c2 = Rc::new(ACell::new(200u32));
@@ -118,11 +121,11 @@
 //! borrow:
 //!
 //! ```compile_fail
-//!# use qcell::{TCell, TCellOwner};
+//!# use qcell::{TLCell, TLCellOwner};
 //!# use std::rc::Rc;
 //!# struct Marker;
-//!# type ACellOwner = TCellOwner<Marker>;
-//!# type ACell<T> = TCell<Marker, T>;
+//!# type ACellOwner = TLCellOwner<Marker>;
+//!# type ACell<T> = TLCell<Marker, T>;
 //!# let mut owner = ACellOwner::new();
 //! let c1 = Rc::new(ACell::new(100u32));
 //! let c2 = Rc::new(ACell::new(200u32));
@@ -135,11 +138,11 @@
 //! Not even if it's borrowing a different object:
 //!
 //! ```compile_fail
-//!# use qcell::{TCell, TCellOwner};
+//!# use qcell::{TLCell, TLCellOwner};
 //!# use std::rc::Rc;
 //!# struct Marker;
-//!# type ACellOwner = TCellOwner<Marker>;
-//!# type ACell<T> = TCell<Marker, T>;
+//!# type ACellOwner = TLCellOwner<Marker>;
+//!# type ACell<T> = TLCell<Marker, T>;
 //!# let mut owner = ACellOwner::new();
 //! let c1 = Rc::new(ACell::new(100u32));
 //! let c2 = Rc::new(ACell::new(200u32));
@@ -152,11 +155,11 @@
 //! Many immutable borrows at the same time is fine:
 //!
 //! ```
-//!# use qcell::{TCell, TCellOwner};
+//!# use qcell::{TLCell, TLCellOwner};
 //!# use std::rc::Rc;
 //!# struct Marker;
-//!# type ACellOwner = TCellOwner<Marker>;
-//!# type ACell<T> = TCell<Marker, T>;
+//!# type ACellOwner = TLCellOwner<Marker>;
+//!# type ACell<T> = TLCell<Marker, T>;
 //!# let mut owner = ACellOwner::new();
 //! let c1 = Rc::new(ACell::new(100u32));
 //! let c2 = Rc::new(ACell::new(200u32));
@@ -171,11 +174,11 @@
 //! Whilst a reference is active, it's impossible to drop the `Rc`:
 //!
 //! ```compile_fail
-//!# use qcell::{TCell, TCellOwner};
+//!# use qcell::{TLCell, TLCellOwner};
 //!# use std::rc::Rc;
 //!# struct Marker;
-//!# type ACellOwner = TCellOwner<Marker>;
-//!# type ACell<T> = TCell<Marker, T>;
+//!# type ACellOwner = TLCellOwner<Marker>;
+//!# type ACell<T> = TLCell<Marker, T>;
 //!# let mut owner = ACellOwner::new();
 //! let c1 = Rc::new(ACell::new(100u32));
 //! let c2 = Rc::new(ACell::new(200u32));
@@ -190,11 +193,11 @@
 //! e.g. `&mut` when there's a `&` reference:
 //!
 //! ```compile_fail
-//!# use qcell::{TCell, TCellOwner};
+//!# use qcell::{TLCell, TLCellOwner};
 //!# use std::rc::Rc;
 //!# struct Marker;
-//!# type ACellOwner = TCellOwner<Marker>;
-//!# type ACell<T> = TCell<Marker, T>;
+//!# type ACellOwner = TLCellOwner<Marker>;
+//!# type ACell<T> = TLCell<Marker, T>;
 //!# let mut owner = ACellOwner::new();
 //! let c1 = Rc::new(ACell::new(100u32));
 //! let c2 = Rc::new(ACell::new(200u32));
@@ -209,11 +212,11 @@
 //! Or `&` when there's a `&mut` reference:
 //!
 //! ```compile_fail
-//!# use qcell::{TCell, TCellOwner};
+//!# use qcell::{TLCell, TLCellOwner};
 //!# use std::rc::Rc;
 //!# struct Marker;
-//!# type ACellOwner = TCellOwner<Marker>;
-//!# type ACell<T> = TCell<Marker, T>;
+//!# type ACellOwner = TLCellOwner<Marker>;
+//!# type ACell<T> = TLCell<Marker, T>;
 //!# let mut owner = ACellOwner::new();
 //! let c1 = Rc::new(ACell::new(100u32));
 //! let c2 = Rc::new(ACell::new(200u32));
@@ -225,36 +228,57 @@
 //! *c1mutref += 1;
 //! ```
 //!
-//! `TCellOwner` and `TCell` should be both `Send` and `Sync` by default:
+//! `TLCellOwner` should be neither `Send` nor `Sync`, because it must
+//! not escape the thread in which it was created:
 //!
-//! ```
-//!# use qcell::{TCellOwner, TCell};
+//! ```compile_fail
+//!# use qcell::TLCellOwner;
 //! struct Marker;
-//! fn is_send_sync<T: Send + Sync>() {}
-//! is_send_sync::<TCellOwner<Marker>>();
-//! is_send_sync::<TCell<Marker, ()>>();
+//! fn is_send<T: Send>() {}
+//! is_send::<TLCellOwner<Marker>>();  // Compile fail
 //! ```
 //!
-//! So for example we can share a cell ref between threads (Sync), and
-//! pass an owner back and forth (Send):
+//! ```compile_fail
+//!# use qcell::TLCellOwner;
+//! struct Marker;
+//! fn is_sync<T: Sync>() {}
+//! is_sync::<TLCellOwner<Marker>>();  // Compile fail
+//! ```
+//!
+//! `TLCell` should be `Send` by default, but never `Sync`:
 //!
 //! ```
-//!# use qcell::{TCellOwner, TCell};
+//!# use qcell::TLCell;
+//! struct Marker;
+//! fn is_send<T: Send>() {}
+//! is_send::<TLCell<Marker, ()>>();
+//! ```
+//!
+//! ```compile_fail
+//!# use qcell::TLCell;
+//! struct Marker;
+//! fn is_sync<T: Sync>() {}
+//! is_sync::<TLCell<Marker, ()>>(); // Compile fail
+//! ```
+//!
+//! A practical example is sending a `TLCell` to another thread for
+//! modification and receiving it back again:
+//!
+//! ```
+//!# use qcell::{TLCellOwner, TLCell};
 //!# struct Marker;
-//! type ACellOwner = TCellOwner<Marker>;
-//! type ACell = TCell<Marker, i32>;
+//! type ACellOwner = TLCellOwner<Marker>;
+//! type ACell = TLCell<Marker, i32>;
 //!
 //! let mut owner = ACellOwner::new();
 //! let cell = ACell::new(100);
 //!
 //! *owner.rw(&cell) += 1;
-//! let cell_ref = &cell;
-//! let mut owner = crossbeam::scope(move |s| {
-//!     s.spawn(move |_| {
-//!         *owner.rw(cell_ref) += 2;
-//!         owner
-//!     }).join().unwrap()
-//! }).unwrap();
+//! let cell = std::thread::spawn(move || {
+//!     let mut owner = ACellOwner::new();  // A different owner
+//!     *owner.rw(&cell) += 2;
+//!     cell
+//! }).join().unwrap();
 //! *owner.rw(&cell) += 4;
 //! assert_eq!(*owner.ro(&cell), 107);
 //! ```
@@ -262,10 +286,10 @@
 //! However you can't send a cell that's still borrowed:
 //!
 //! ```compile_fail
-//!# use qcell::{TCellOwner, TCell};
+//!# use qcell::{TLCellOwner, TLCell};
 //!# struct Marker;
-//!# type ACellOwner = TCellOwner<Marker>;
-//!# type ACell = TCell<Marker, i32>;
+//!# type ACellOwner = TLCellOwner<Marker>;
+//!# type ACell = TLCell<Marker, i32>;
 //! let owner = ACellOwner::new();
 //! let cell = ACell::new(100);
 //! let val_ref = owner.ro(&cell);
@@ -275,57 +299,23 @@
 //! assert_eq!(*val_ref, 100);
 //! ```
 //!
-//! If the contained type isn't `Sync`, though, then `TCell` shouldn't
-//! be `Sync` either:
+//! If the contained type isn't `Send`, the `TLCell` shouldn't be
+//! `Send` either:
 //!
 //! ```compile_fail
-//!# use qcell::TCell;
-//!# use std::cell::Cell;
-//!# struct Marker;
-//! fn is_sync<T: Sync>() {}
-//! is_sync::<TCell<Marker, Cell<i32>>>();  // Compile fail
-//! ```
-//!
-//! ```compile_fail
-//!# use qcell::{TCell, TCellOwner};
-//!# use std::cell::Cell;
-//!# struct Marker;
-//! type ACellOwner = TCellOwner<Marker>;
-//! type ACell = TCell<Marker, Cell<i32>>;
-//!
-//! let owner = ACellOwner::new();
-//! let cell = ACell::new(Cell::new(100));
-//!
-//! // This would be a data race if the compiler permitted it, but it doesn't
-//! std::thread::spawn(|| owner.ro(&cell).set(200));  // Compile fail
-//! owner.ro(&cell).set(300);
-//! ```
-//!
-//! If the contained type isn't `Send`, the `TCell` should be neither
-//! `Sync` nor `Send`:
-//!
-//! ```compile_fail
-//!# use qcell::TCell;
-//!# use std::rc::Rc;
-//!# struct Marker;
-//! fn is_sync<T: Sync>() {}
-//! is_sync::<TCell<Marker, Rc<()>>>();  // Compile fail
-//! ```
-//!
-//! ```compile_fail
-//!# use qcell::TCell;
+//!# use qcell::TLCell;
 //!# use std::rc::Rc;
 //!# struct Marker;
 //! fn is_send<T: Send>() {}
-//! is_send::<TCell<Marker, Rc<()>>>();  // Compile fail
+//! is_send::<TLCell<Marker, Rc<()>>>();  // Compile fail
 //! ```
 //!
 //! ```compile_fail
-//!# use qcell::{TCell, TCellOwner};
+//!# use qcell::{TLCell, TLCellOwner};
 //!# use std::rc::Rc;
 //!# struct Marker;
-//! type ACellOwner = TCellOwner<Marker>;
-//! type ACell = TCell<Marker, Rc<i32>>;
+//! type ACellOwner = TLCellOwner<Marker>;
+//! type ACell = TLCell<Marker, Rc<i32>>;
 //!
 //! let owner = ACellOwner::new();
 //! let cell = ACell::new(Rc::new(100));

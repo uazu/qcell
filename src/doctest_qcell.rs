@@ -163,3 +163,95 @@
 //! test(&owner);    // Compile error
 //! *c1mutref += 1;
 //! ```
+//!
+//! `QCellOwner` and `QCell` should be both `Send` and `Sync` by default:
+//!
+//! ```
+//!# use qcell::{QCellOwner, QCell};
+//! fn is_send_sync<T: Send + Sync>() {}
+//! is_send_sync::<QCellOwner>();
+//! is_send_sync::<QCell<()>>();
+//! ```
+//!
+//! So for example we can share a cell ref between threads (Sync), and
+//! pass an owner back and forth (Send):
+//!
+//! ```
+//!# use qcell::{QCellOwner, QCell};
+//! let mut owner = QCellOwner::new();
+//! let cell = QCell::new(&owner, 100_i32);
+//!
+//! *owner.rw(&cell) += 1;
+//! let cell_ref = &cell;
+//! let mut owner = crossbeam::scope(move |s| {
+//!     s.spawn(move |_| {
+//!         *owner.rw(cell_ref) += 2;
+//!         owner
+//!     }).join().unwrap()
+//! }).unwrap();
+//! *owner.rw(&cell) += 4;
+//! assert_eq!(*owner.ro(&cell), 107);
+//! ```
+//!
+//! However you can't send a cell that's still borrowed:
+//!
+//! ```compile_fail
+//!# use qcell::{QCellOwner, QCell};
+//! let owner = QCellOwner::new();
+//! let cell = QCell::new(&owner, 100);
+//! let val_ref = owner.ro(&cell);
+//! std::thread::spawn(move || {
+//!     assert_eq!(*owner.ro(&cell), 100);
+//! }).join();
+//! assert_eq!(*val_ref, 100);
+//! ```
+//!
+//! If the contained type isn't `Sync`, though, then `QCell` shouldn't
+//! be `Sync` either:
+//!
+//! ```compile_fail
+//!# use qcell::QCell;
+//!# use std::cell::Cell;
+//! fn is_sync<T: Sync>() {}
+//! is_sync::<QCell<Cell<i32>>>();  // Compile fail
+//! ```
+//!
+//! ```compile_fail
+//!# use qcell::{QCell, QCellOwner};
+//!# use std::cell::Cell;
+//! let owner = QCellOwner::new();
+//! let cell = QCell::new(&owner, Cell::new(100));
+//!
+//! // This would be a data race if the compiler permitted it, but it doesn't
+//! std::thread::spawn(|| owner.ro(&cell).set(200));  // Compile fail
+//! owner.ro(&cell).set(300);
+//! ```
+//!
+//! If the contained type isn't `Send`, the `QCell` should be neither
+//! `Sync` nor `Send`:
+//!
+//! ```compile_fail
+//!# use qcell::QCell;
+//!# use std::rc::Rc;
+//! fn is_sync<T: Sync>() {}
+//! is_sync::<QCell<Rc<()>>>();  // Compile fail
+//! ```
+//!
+//! ```compile_fail
+//!# use qcell::QCell;
+//!# use std::rc::Rc;
+//! fn is_send<T: Send>() {}
+//! is_send::<QCell<Rc<()>>>();  // Compile fail
+//! ```
+//!
+//! ```compile_fail
+//!# use qcell::{QCell, QCellOwner};
+//!# use std::rc::Rc;
+//! let owner = QCellOwner::new();
+//! let cell = QCell::new(&owner, Rc::new(100));
+//!
+//! // We aren't permitted to move the Rc to another thread
+//! std::thread::spawn(move || {    // Compile fail
+//!     assert_eq!(100, **owner.ro(&cell));
+//! }).join();
+//! ```

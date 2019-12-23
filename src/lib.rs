@@ -1,12 +1,13 @@
 //! Statically-checked alternatives to [`RefCell`].
 //!
-//! This crate provides three alternatives to [`RefCell`], each of
+//! This crate provides four alternatives to [`RefCell`], each of
 //! which checks borrows from the cell at compile-time (statically)
 //! instead of checking them at runtime as [`RefCell`] does.  The
-//! mechasism for checks is the same for all three.  They only differ
+//! mechasism for checks is the same for all four.  They only differ
 //! in how ownership is represented: [`QCell`] uses an integer ID,
-//! [`TCell`] uses a marker type, and [`LCell`] uses a Rust lifetime.
-//! Each approach has its advantages and disadvantages.
+//! [`TCell`] and [`TLCell`] use a marker type, and [`LCell`] uses a
+//! Rust lifetime.  Each approach has its advantages and
+//! disadvantages.
 //!
 //! Taking [`QCell`] as an example: [`QCell`] is a cell type where the
 //! cell contents are logically 'owned' for borrowing purposes by an
@@ -45,9 +46,10 @@
 //!
 //! Apart from [`QCell`] and [`QCellOwner`], this crate also provides
 //! [`TCell`] and [`TCellOwner`] which work the same but use a marker
-//! type instead of owner IDs, and [`LCell`] and [`LCellOwner`] which
-//! use lifetimes.  See the ["Comparison of cell
-//! types"](#comparison-of-cell-types) below.
+//! type instead of owner IDs, [`TLCell`] and [`TLCellOwner`] which
+//! also use a marker type but which are thread-local, and [`LCell`]
+//! and [`LCellOwner`] which use lifetimes.  See the ["Comparison of
+//! cell types"](#comparison-of-cell-types) below.
 //!
 //! # Examples
 //!
@@ -178,15 +180,16 @@
 //! - Con: Can only borrow up to 3 objects at a time
 //! - Con: Runtime owner checks and some cell space overhead
 //!
-//! [`TCell`] pros and cons:
+//! [`TCell`] and [`TLCell`] pros and cons:
 //!
 //! - Pro: Compile-time borrowing checks
 //! - Pro: No overhead at runtime for borrowing or ownership checks
 //! - Pro: No cell space overhead
 //! - Con: Can only borrow up to 3 objects at a time
-//! - Con: Uses per-thread singletons, meaning only one owner is
-//! allowed per thread per marker type.  Code intended to be nested on
-//! the call stack must be parameterised with an external marker type.
+//! - Con: Uses singletons, either per-process (TCell) or per-thread
+//! (TLCell), meaning only one owner is allowed per thread or process
+//! per marker type.  Code intended to be nested on the call stack
+//! must be parameterised with an external marker type.
 //!
 //! [`LCell`] pros and cons:
 //!
@@ -201,7 +204,7 @@
 //! ---|---|---|---|---|---
 //! `RefCell` | n/a | `usize` | Runtime | n/a | n/a
 //! `QCell` | integer | `u32` | Compile-time | Runtime | Runtime
-//! `TCell` | marker type | none | Compile-time | Compile-time | Runtime
+//! `TCell` or `TLCell` | marker type | none | Compile-time | Compile-time | Runtime
 //! `LCell` | lifetime | none | Compile-time | Compile-time | Compile-time
 //!
 //! Owner ergonomics:
@@ -210,7 +213,7 @@
 //! ---|---|---
 //! `RefCell` | n/a | n/a
 //! `QCell` | `QCellOwner` | `QCellOwner::new()`
-//! `TCell` | `ACellOwner`<br/>(or `BCellOwner` or `CCellOwner` etc) | `struct MarkerA;`<br/>`type ACell<T> = TCell<MarkerA, T>;`<br/>`type ACellOwner = TCellOwner<MarkerA>;`<br/>`ACellOwner::new()`
+//! `TCell` or<br/>`TLCell` | `ACellOwner`<br/>(or `BCellOwner` or `CCellOwner` etc) | `struct MarkerA;`<br/>`type ACell<T> = TCell<MarkerA, T>;`<br/>`type ACellOwner = TCellOwner<MarkerA>;`<br/>`ACellOwner::new()`
 //! `LCell` | `LCellOwner<'id>` | `LCellOwner::scope(`\|`owner`\|` { ... })`
 //!
 //! Cell ergonomics:
@@ -219,7 +222,7 @@
 //! ---|---|---
 //! `RefCell` | `RefCell<T>` | `RefCell::new(v)`
 //! `QCell` | `QCell<T>` | `owner.cell(v)` or `QCell::new(&owner, v)`
-//! `TCell` | `ACell<T>` | `owner.cell(v)` or `ACell::new(v)`
+//! `TCell` or `TLCell` | `ACell<T>` | `owner.cell(v)` or `ACell::new(v)`
 //! `LCell` | `LCell<'id, T>` | `owner.cell(v)` or `LCell::new(v)`
 //!
 //! Borrowing ergonomics:
@@ -228,29 +231,85 @@
 //! ---|---|---
 //! `RefCell` | `cell.borrow()` | `cell.borrow_mut()`
 //! `QCell` | `owner.ro(&cell)` | `owner.rw(&cell)`
-//! `TCell` | `owner.ro(&cell)` | `owner.rw(&cell)`
+//! `TCell` or `TLCell` | `owner.ro(&cell)` | `owner.rw(&cell)`
 //! `LCell` | `owner.ro(&cell)` | `owner.rw(&cell)`
+//!
+//! # Multi-threaded use: Send and Sync
+//!
+//! Most often the cell-owner will be held by just one thread, and all
+//! access to cells will be made within that thread.  However it is
+//! still safe to pass or share these objects between threads in some
+//! cases, where permitted by the contained type:
+//!
+//! Cell | Owner type | Cell type
+//! ---|---|---
+//! `RefCell` | n/a | Send
+//! `QCell` | Send + Sync | Send + Sync
+//! `TCell` | Send + Sync | Send + Sync
+//! `TLCell` |  | Send
+//! `LCell` | Send + Sync | Send + Sync
+//!
+//! I believe that the reasoning behind enabling Send and/or Sync is
+//! sound, but I welcome review of this in case anything has been
+//! overlooked.  I am grateful for contributions from Github users
+//! [**Migi**] and [**pythonesque**].  `GhostCell` by
+//! [**pythonesque**] is a lifetime-based cell that predated `LCell`.
+//! It appears that he has proved some properties of `GhostCell` using
+//! Coq, and I hope that that research becomes public in due course.
+//!
+//! Here's an overview of the reasoning:
+//!
+//! - Unlike `RefCell` these cell types may be `Sync` because mutable
+//! access is protected by the cell owner.  You can get mutable access
+//! to the cell contents only if you have mutable access to the cell
+//! owner.  (Note that `Sync` is only available where the contained
+//! type is `Send + Sync`.)
+//!
+//! - The cell owner may be `Sync` because `Sync` only allows shared
+//! immutable access to the cell owner across threads.  So there may
+//! exist `&QCell` and `&QCellOwner` references in two threads, but
+//! only immutable access to the cell contents is possible like that,
+//! so there is no soundness issue.
+//!
+//! - In general `Send` is safe because that is a complete transfer of
+//! some right from one thread to another (assuming the contained type
+//! is also `Send`).
+//!
+//! - `TLCell` is the exception because there can be a different owner
+//! with the same marker type in each thread, so owners must not be
+//! sent or shared.  Also if two threads have `&TLCell` references to
+//! the same cell then mutable references to the contained data could
+//! be created in both threads which would break Rust's guarantees.
+//! So `TLCell` cannot be `Sync`.  However it can be `Send` because in
+//! that case the right to access the data is being transferred
+//! completely from one thread to another.
 //!
 //! # Origin of names
 //!
 //! "Q" originally referred to quantum entanglement, the idea being
 //! that this is a kind of remote ownership.  "T" refers to it being
-//! type system based, "L" to lifetime-based.
+//! type system based, "TL" thread-local, "L" to lifetime-based.
 //!
 //! # Unsafe code patterns blocked
 //!
-//! See the [`doctest_qcell`], [`doctest_tcell`] and [`doctest_lcell`] modules
+//! See the [`doctest_qcell`], [`doctest_tcell`], [`doctest_tlcell`]
+//! and [`doctest_lcell`] modules
 //!
 //! [`RefCell`]: https://doc.rust-lang.org/std/cell/struct.RefCell.html
 //! [`QCell`]: struct.QCell.html
 //! [`QCellOwner`]: struct.QCellOwner.html
 //! [`TCell`]: struct.TCell.html
 //! [`TCellOwner`]: struct.TCellOwner.html
+//! [`TLCell`]: struct.TLCell.html
+//! [`TLCellOwner`]: struct.TLCellOwner.html
 //! [`LCell`]: struct.LCell.html
 //! [`LCellOwner`]: struct.LCellOwner.html
 //! [`doctest_qcell`]: doctest_qcell/index.html
 //! [`doctest_tcell`]: doctest_tcell/index.html
+//! [`doctest_tlcell`]: doctest_tlcell/index.html
 //! [`doctest_lcell`]: doctest_lcell/index.html
+//! [**Migi**]: https://github.com/Migi
+//! [**pythonesque**]: https://github.com/pythonesque
 
 #![deny(rust_2018_idioms)]
 
@@ -260,10 +319,12 @@ extern crate lazy_static;
 mod lcell;
 mod qcell;
 mod tcell;
+mod tlcell;
 
 pub mod doctest_lcell;
 pub mod doctest_qcell;
 pub mod doctest_tcell;
+pub mod doctest_tlcell;
 
 pub use crate::lcell::LCell;
 pub use crate::lcell::LCellOwner;
@@ -272,3 +333,5 @@ pub use crate::qcell::QCellOwner;
 pub use crate::qcell::QCellOwnerID;
 pub use crate::tcell::TCell;
 pub use crate::tcell::TCellOwner;
+pub use crate::tlcell::TLCell;
+pub use crate::tlcell::TLCellOwner;

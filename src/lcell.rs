@@ -9,10 +9,10 @@ type Id<'id> = PhantomData<Cell<&'id mut ()>>;
 /// Use `LCellOwner::scope(|owner| ...)` to create an instance of this
 /// type.
 ///
-/// This based around creating an invariant lifetime within the
-/// closure, which is different to any other Rust lifetime thanks to
-/// the techniques explained in various sources: section 6.3 of [this
-/// thesis from
+/// The key piece of Rust syntax that enables this is `for<'id>`.
+/// This allows creating an invariant lifetime within a closure, which
+/// is different to any other Rust lifetime thanks to the techniques
+/// explained in various places: section 6.3 of [this thesis from
 /// Gankro](https://raw.githubusercontent.com/Gankro/thesis/master/thesis.pdf),
 /// [this Reddit
 /// post](https://www.reddit.com/r/rust/comments/3oo0oe/sound_unchecked_indexing_with_lifetimebased_value/),
@@ -22,9 +22,21 @@ type Id<'id> = PhantomData<Cell<&'id mut ()>>;
 /// comment](https://www.reddit.com/r/rust/comments/3aahl1/outside_of_closures_what_are_some_other_uses_for/csavac5/)
 /// and its linked playground code.
 ///
-/// This works in a similar way to a cell type known as `GhostCell` or
-/// `ghost_cell`, but the invariant lifetime discussion above that
-/// this code is based on predates the `GhostCell` implementation.
+/// `LCellOwner` uses a closure to contain the invariant lifetime.
+/// However it's also worth noting the alternative approach used in
+/// crate [`generativity`](https://crates.io/crates/generativity) that
+/// uses a macro instead.
+///
+/// Some history: `GhostCell` by
+/// [**pythonesque**](https://github.com/pythonesque) predates the
+/// creation of `LCell`, and inspired it.  Discussion of `GhostCell`
+/// on Reddit showed that a lifetime-based approach to cells was
+/// feasible, but unfortunately the `ghost_cell.rs` source didn't seem
+/// to be available under a community-friendly licence.  So I went
+/// back to first principles and created `LCell` from `TCell` code,
+/// combined with invariant lifetime code derived from the various
+/// community sources that predate `GhostCell`.  Later `Send` and
+/// `Sync` support for `LCell` was contributed independently.
 ///
 /// See also [crate documentation](index.html).
 pub struct LCellOwner<'id> {

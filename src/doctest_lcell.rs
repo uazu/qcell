@@ -34,7 +34,6 @@
 //!         println!("{}", *c1ref2);
 //!     });
 //! });
-//!
 //! ```
 //!
 //! Or mutably:
@@ -207,5 +206,107 @@
 //!     test(&mut ct, &c1);
 //!     let c1mutref = ct.owner.rw(&c1);
 //!     *c1mutref += 2;
+//! });
+//! ```
+//!
+//! `LCellOwner` and `LCell` should be both `Send` and `Sync` by default:
+//!
+//! ```
+//!# use qcell::{LCellOwner, LCell};
+//! fn is_send_sync<T: Send + Sync>() {}
+//! is_send_sync::<LCellOwner<'_>>();
+//! is_send_sync::<LCell<'_, ()>>();
+//! ```
+//!
+//! So for example we can share a cell ref between threads (Sync), and
+//! pass an owner back and forth (Send):
+//!
+//! ```
+//!# use qcell::{LCellOwner, LCell};
+//!
+//! LCellOwner::scope(|mut owner| {
+//!     let cell = LCell::new(100);
+//!
+//!     *owner.rw(&cell) += 1;
+//!     let cell_ref = &cell;
+//!     let mut owner = crossbeam::scope(move |s| {
+//!         s.spawn(move |_| {
+//!             *owner.rw(cell_ref) += 2;
+//!             owner
+//!         }).join().unwrap()
+//!     }).unwrap();
+//!     *owner.rw(&cell) += 4;
+//!     assert_eq!(*owner.ro(&cell), 107);
+//! });
+//! ```
+//!
+//! However you can't send a cell that's still borrowed:
+//!
+//! ```compile_fail
+//!# use qcell::{LCellOwner, LCell};
+//! LCellOwner::scope(|mut owner| {
+//!     let cell = LCell::new(100);
+//!     let val_ref = owner.ro(&cell);
+//!     crossbeam::scope(move |s| {
+//!         s.spawn(move |_| assert_eq!(*owner.ro(&cell), 100)).join().unwrap(); // Compile fail
+//!     }).unwrap();
+//!     assert_eq!(*val_ref, 100);
+//! });
+//! ```
+//!
+//! If the contained type isn't `Sync`, though, then `LCell` shouldn't
+//! be `Sync` either:
+//!
+//! ```compile_fail
+//!# use qcell::LCell;
+//!# use std::cell::Cell;
+//! fn is_sync<T: Sync>() {}
+//! is_sync::<LCell<'_, Cell<i32>>>();  // Compile fail
+//! ```
+//!
+//! ```compile_fail
+//!# use qcell::{LCell, LCellOwner};
+//!# use std::cell::Cell;
+//! LCellOwner::scope(|owner| {
+//!     let cell = LCell::new(Cell::new(100));
+//!
+//!     // This would likely be a data race if it compiled
+//!     crossbeam::scope(|s| {   // Compile fail
+//!         let handle = s.spawn(|_| owner.ro(&cell).set(200));
+//!         owner.ro(&cell).set(300);
+//!         handle.join().unwrap();
+//!     }).unwrap();
+//! });
+//! ```
+//!
+//! If the contained type isn't `Send`, the `LCell` should be neither
+//! `Sync` nor `Send`:
+//!
+//! ```compile_fail
+//!# use qcell::LCell;
+//!# use std::rc::Rc;
+//!# struct Marker;
+//! fn is_sync<T: Sync>() {}
+//! is_sync::<LCell<'_, Rc<()>>>();  // Compile fail
+//! ```
+//!
+//! ```compile_fail
+//!# use qcell::LCell;
+//!# use std::rc::Rc;
+//!# struct Marker;
+//! fn is_send<T: Send>() {}
+//! is_send::<LCell<'_, Rc<()>>>();  // Compile fail
+//! ```
+//!
+//! ```compile_fail
+//!# use qcell::{LCell, LCellOwner};
+//!# use std::rc::Rc;
+//! LCellOwner::scope(|owner| {
+//!     let cell = LCell::new(Rc::new(100));
+//!
+//!     // We aren't permitted to move the Rc to another thread
+//!     crossbeam::scope(move |s| {
+//!         s.spawn(move |_| assert_eq!(100, **owner.ro(&cell))).join().unwrap(); // Compile fail
+//!     }).unwrap();
 //! });
 //! ```

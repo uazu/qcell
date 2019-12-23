@@ -17,5 +17,5 @@ categories = [ "data-structures", "memory-management", "rust-patterns" ]
 [dependencies]
 lazy_static = "1.3.0"
 
-[features]
-no-thread-local = []
+[dev-dependencies]
+crossbeam = "0.7"

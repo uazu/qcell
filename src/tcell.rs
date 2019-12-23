@@ -3,15 +3,9 @@ use std::cell::UnsafeCell;
 use std::collections::HashSet;
 use std::marker::PhantomData;
 
-#[cfg(feature = "no-thread-local")]
 lazy_static! {
     static ref SINGLETON_CHECK: std::sync::Mutex<HashSet<TypeId>> =
         std::sync::Mutex::new(HashSet::new());
-}
-
-#[cfg(not(feature = "no-thread-local"))]
-std::thread_local! {
-    static SINGLETON_CHECK: std::cell::RefCell<HashSet<TypeId>> = std::cell::RefCell::new(HashSet::new());
 }
 
 /// Borrowing-owner of zero or more [`TCell`](struct.TCell.html)
@@ -19,42 +13,33 @@ std::thread_local! {
 ///
 /// See [crate documentation](index.html).
 pub struct TCellOwner<Q: 'static> {
-    // Use *const to disable Send and Sync
-    typ: PhantomData<*const Q>,
+    // Allow Send and Sync
+    typ: PhantomData<Q>,
 }
 
 impl<Q: 'static> Drop for TCellOwner<Q> {
     fn drop(&mut self) {
-        #[cfg(feature = "no-thread-local")]
         SINGLETON_CHECK.lock().unwrap().remove(&TypeId::of::<Q>());
-        #[cfg(not(feature = "no-thread-local"))]
-        SINGLETON_CHECK.with(|set| set.borrow_mut().remove(&TypeId::of::<Q>()));
+    }
+}
+
+impl<Q: 'static> Default for TCellOwner<Q> {
+    fn default() -> Self {
+        TCellOwner::new()
     }
 }
 
 impl<Q: 'static> TCellOwner<Q> {
     /// Create the singleton owner instance.  Each owner may be used
     /// to create many `TCell` instances.  There may be only one
-    /// instance of this type per thread at any given time for each
+    /// instance of this type per process at any given time for each
     /// different marker type `Q`.  This call panics if a second
-    /// simultaneous instance is created.  Since the owner is only
-    /// valid to use in the thread it is created in, it does not
-    /// support `Send` or `Sync`.
-    ///
-    /// If the "no-thread-local" feature is enabled, then only one
-    /// instance per marker type is permitted across the whole process
-    /// (instead of per-thread).
+    /// simultaneous instance is created.
     pub fn new() -> Self {
-        #[cfg(feature = "no-thread-local")]
         assert!(
             SINGLETON_CHECK.lock().unwrap().insert(TypeId::of::<Q>()),
             "Illegal to create two TCellOwner instances with the same marker type parameter"
         );
-        #[cfg(not(feature = "no-thread-local"))]
-        SINGLETON_CHECK.with(|set| {
-            assert!(set.borrow_mut().insert(TypeId::of::<Q>()),
-                    "Illegal to create two TCellOwner instances within the same thread with the same marker type parameter");
-        });
         Self { typ: PhantomData }
     }
 
@@ -127,15 +112,14 @@ impl<Q: 'static> TCellOwner<Q> {
 /// [`TCellOwner`].
 ///
 /// To borrow from this cell, use the borrowing calls on the
-/// [`TCellOwner`] instance that shares the same marker type.  Since
-/// there may be another indistinguishable [`TCellOwner`] in another
-/// thread, `Send` and `Sync` is not supported for this type.
+/// [`TCellOwner`] instance that shares the same marker type.
 ///
 /// See also [crate documentation](index.html).
 ///
 /// [`TCellOwner`]: struct.TCellOwner.html
 pub struct TCell<Q, T> {
-    // Use *const to disable Send and Sync
+    // Use *const to disable Send and Sync, which are then re-enabled
+    // below under certain conditions
     owner: PhantomData<*const Q>,
     value: UnsafeCell<T>,
 }
@@ -152,18 +136,27 @@ impl<Q, T> TCell<Q, T> {
     }
 }
 
-// TCell absolutely cannot be Sync, since otherwise you could send
-// two &TCell's to two different threads, that each have their own
-// TCellOwner<Q> instance and that could therefore both give out
-// a &mut T to the same T.
+// It's fine to Send a TCell to a different thread if the containted
+// type is Send, because you can only send something if nothing
+// borrows it, so nothing can be accessing its contents.
+unsafe impl<Q, T: Send> Send for TCell<Q, T> {}
+
+// We can add a Sync implementation, since it's fine to send a &TCell
+// to another thread, and even mutably borrow the value there, as long
+// as T is Send and Sync.
 //
-// However, it's fine to Send a TCell to a different thread, because
-// you can only send something if nothing borrows it, so nothing can
-// be accessing its contents. After sending the TCell, the original
-// TCellOwner can no longer give access to the TCell's contents since
-// TCellOwner is !Send + !Sync. Only the TCellOwner of the new thread
-// can give access to this TCell's contents now.
-unsafe impl<Q, T> Send for TCell<Q, T> {}
+// The reason why TCell<T>'s impl of Sync requires T: Send + Sync
+// instead of just T: Sync is that TCell provides interior mutability.
+// If you send a &TCell<T> (and its owner) to a different thread, you
+// can call .rw() to get a &mut T, and use std::mem::swap() to move
+// the T, effectively sending the T to that other thread. That's not
+// allowed if T: !Send.
+//
+// Note that the bounds on T for TCell<T>'s impl of Sync are the same
+// as those of std::sync::RwLock<T>. That's not a coincidence.
+// The way these types let you access T concurrently is the same,
+// even though the locking mechanisms are different.
+unsafe impl<Q, T: Send + Sync> Sync for TCell<Q, T> {}
 
 #[cfg(test)]
 mod tests {
@@ -208,45 +201,23 @@ mod tests {
         assert_eq!(total, 303);
     }
 
-    #[cfg(feature = "no-thread-local")]
     #[test]
     #[should_panic]
     fn tcell_threads() {
         struct Marker;
         type ACellOwner = TCellOwner<Marker>;
-        let mut _owner1 = ACellOwner::new();
-        std::thread::spawn(|| {
-            let mut _owner2 = ACellOwner::new(); // Panics here
-        })
-        .join()
-        .unwrap();
-    }
-
-    #[cfg(not(feature = "no-thread-local"))]
-    #[test]
-    fn tcell_threads() {
-        struct Marker;
-        type ACellOwner = TCellOwner<Marker>;
-        let mut _owner1 = ACellOwner::new();
-        std::thread::spawn(|| {
-            let mut _owner2 = ACellOwner::new();
-        })
-        .join()
-        .unwrap();
-    }
-
-    #[cfg(not(feature = "no-thread-local"))]
-    #[test]
-    #[should_panic]
-    fn tcell_threads_2() {
-        struct Marker;
-        type ACellOwner = TCellOwner<Marker>;
-        let mut _owner1 = ACellOwner::new();
-        std::thread::spawn(|| {
-            let mut _owner2 = ACellOwner::new();
-            let mut _owner3 = ACellOwner::new(); // Panics here
-        })
-        .join()
-        .unwrap();
+        // Do it this way around to make the panic appear in the main
+        // thread, to avoid spurious messages in the test output.
+        let (tx, rx) = std::sync::mpsc::sync_channel(0);
+        std::thread::spawn(move || {
+            let mut _owner = ACellOwner::new();
+            tx.send(()).unwrap();
+            // Delay long enough for the panic to occur; this will
+            // fail if the main thread panics, so ignore that
+            let _ = tx.send(());
+        });
+        rx.recv().unwrap();
+        let mut _owner = ACellOwner::new(); // Panics here
+        let _ = rx.recv();
     }
 }
