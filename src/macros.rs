@@ -44,9 +44,9 @@ macro_rules! rw {
             rest: $crate::rw!(@tuple $($rest),*)
         }
     };
-    (@destruct [] [$($tup:tt)*] $value:expr) => {{
+    (@destruct [] [$($tup:expr),* $(,)?] $value:expr) => {{
         let $crate::tuple::Nil = $value;
-        ($($tup)*)
+        ($($tup),*)
     }};
     (@destruct [$a:expr $(, $rest:expr)*] [$($tup:tt)*] $value:expr) => {{
         let $crate::tuple::Cons { value, rest } = $value;
