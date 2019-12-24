@@ -2,6 +2,8 @@ use std::cell::UnsafeCell;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
 
+use crate::tuple::{ValidateUniqueness, LoadValues};
+
 type OwnerID = u32;
 
 /// Internal ID associated with a [`QCellOwner`].
@@ -188,8 +190,7 @@ impl QCellOwner {
     /// another can be borrowed.  Panics if the `QCell` is not owned
     /// by this `QCellOwner`.
     pub fn rw<'a, T>(&'a mut self, qc: &'a QCell<T>) -> &'a mut T {
-        assert_eq!(qc.owner, self.id, "QCell accessed with incorrect owner");
-        unsafe { &mut *qc.value.get() }
+        crate::rw!(self => *qc).0
     }
 
     /// Borrow contents of two `QCell` instances mutably.  Panics if
@@ -200,13 +201,7 @@ impl QCellOwner {
         qc1: &'a QCell<T>,
         qc2: &'a QCell<U>,
     ) -> (&'a mut T, &'a mut U) {
-        assert_eq!(qc1.owner, self.id, "QCell accessed with incorrect owner");
-        assert_eq!(qc2.owner, self.id, "QCell accessed with incorrect owner");
-        assert_ne!(
-            qc1 as *const _ as usize, qc2 as *const _ as usize,
-            "Illegal to borrow same QCell twice with rw2()"
-        );
-        unsafe { (&mut *qc1.value.get(), &mut *qc2.value.get()) }
+        crate::rw!(self => *qc1, *qc2)
     }
 
     /// Borrow contents of three `QCell` instances mutably.  Panics if
@@ -218,22 +213,48 @@ impl QCellOwner {
         qc2: &'a QCell<U>,
         qc3: &'a QCell<V>,
     ) -> (&'a mut T, &'a mut U, &'a mut V) {
-        assert_eq!(qc1.owner, self.id, "QCell accessed with incorrect owner");
-        assert_eq!(qc2.owner, self.id, "QCell accessed with incorrect owner");
-        assert_eq!(qc3.owner, self.id, "QCell accessed with incorrect owner");
-        assert!(
-            (qc1 as *const _ as usize != qc2 as *const _ as usize)
-                && (qc2 as *const _ as usize != qc3 as *const _ as usize)
-                && (qc3 as *const _ as usize != qc1 as *const _ as usize),
-            "Illegal to borrow same QCell twice with rw3()"
-        );
+        crate::rw!(self => *qc1, *qc2, *qc3)
+    }
+
+    /// Borrow the contents of any number of `LCell` instances mutably.  Panics if
+    /// any pair of `LCell` instances point to the same memory.
+    #[inline]
+    pub fn rw_generic<'a, T>(&'a mut self, qcells: T) -> T::Output
+    where
+        T: CheckOwner + LoadValues<'a> + ValidateUniqueness
+    {
+        // TODO: This assertion needs testing (`qcell.is_owned_by`) for multiple values
+        assert!(qcells.is_owned_by(self.id), "QCell accessed with incorrect owner");
+        assert!(qcells.all_unique(), "Illegal to borrow same QCell multiple times");
+
         unsafe {
-            (
-                &mut *qc1.value.get(),
-                &mut *qc2.value.get(),
-                &mut *qc3.value.get(),
-            )
+            qcells.load_values()
         }
+    }
+}
+
+unsafe impl<T> crate::tuple::GenericCell for QCell<T> {
+    type Value = T;
+
+    fn rw_ptr(&self) -> *mut Self::Value {
+        self.value.get()
+    }
+}
+
+pub unsafe trait CheckOwner {
+    fn is_owned_by(&self, owner: OwnerID) -> bool;
+}
+
+unsafe impl CheckOwner for crate::tuple::Nil {
+    fn is_owned_by(&self, _owner: OwnerID) -> bool { true }
+}
+
+unsafe impl<T, R> CheckOwner for crate::tuple::Cons<&QCell<T>, R>
+where
+    R: CheckOwner
+{
+    fn is_owned_by(&self, owner: OwnerID) -> bool {
+        self.value.owner == owner && self.rest.is_owned_by(owner)
     }
 }
 
