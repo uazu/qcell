@@ -101,7 +101,7 @@ impl<Q: 'static> TLCellOwner<Q> {
     where
         T: GenericTLCellList<Q> + LoadValues<'a> + ValidateUniqueness
     {
-        assert!(tcells.all_unique(), "Illegal to borrow same LCell multiple times");
+        assert!(tcells.all_unique(), "Illegal to borrow same TLCell multiple times");
 
         unsafe {
             tcells.load_values()
