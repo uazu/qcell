@@ -7,13 +7,28 @@ pub struct Cons<T, R> {
     pub rest: R
 }
 
-pub unsafe trait GenericCell {
+impl crate::Sealed for Nil {}
+impl<T, R> crate::Sealed for Cons<T, R> {}
+
+/// This is a generic interface that all of `QCell`, `TCell`, `TLCell`, and `LCell`
+/// implement in order to uniquely borrow an arbitrary number of arguments
+/// 
+/// # Safety
+/// 
+/// The pointer returned by `rw_ptr` must be valid to write to for as long as
+/// the corresponding lock on the owner is held
+pub unsafe trait GenericCell: crate::Sealed {
     type Value;
 
     fn rw_ptr(&self) -> *mut Self::Value;
 }
 
-pub unsafe trait IterAddresses {
+/// Enumerate the addresses of the cells
+/// 
+/// # Safety
+/// 
+/// `iter_addr` must account for all cells in the type-list exactly once
+pub unsafe trait IterAddresses: crate::Sealed {
     type Iter: Iterator<Item = usize>;
 
     fn iter_addr(&self) -> Self::Iter;
@@ -40,7 +55,12 @@ where
     }
 }
 
-pub unsafe trait ValidateUniqueness {
+/// Validates that each reference in the type-list is unique within the type-list
+/// 
+/// # Safety
+/// 
+/// `all_unique` must return false if there are any aliasing references in the type-list
+pub unsafe trait ValidateUniqueness: crate::Sealed {
     fn all_unique(&self) -> bool;
 }
 
@@ -50,7 +70,7 @@ unsafe impl ValidateUniqueness for Nil {
     fn all_unique(&self) -> bool { true }
 }
 
-// Cons is unique if the rest of the list is unique, 
+// Cons is unique if the rest of the type-list is unique, 
 // and if the current address is not the same as any other address
 unsafe impl<T, R> ValidateUniqueness for Cons<&T, R>
 where
@@ -68,9 +88,19 @@ where
     }
 }
 
-pub unsafe trait LoadValues<'a> {
+/// Gets a type-list of unique references into the type-list of cells
+/// 
+/// # Safety
+/// 
+/// Must only be implemented for type-lists of `QCell`, `TCell`, `TLCell`, `LCell`
+pub unsafe trait LoadValues<'a>: crate::Sealed {
     type Output;
 
+    /// # Safety
+    /// 
+    /// For all cells you must validate that all cells in the type-list are unique
+    /// 
+    /// For `QCell` you must also validate the owner
     unsafe fn load_values(self) -> Self::Output;
 }
 

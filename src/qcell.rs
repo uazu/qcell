@@ -233,6 +233,7 @@ impl QCellOwner {
     }
 }
 
+impl<T> crate::Sealed for QCell<T> {}
 unsafe impl<T> crate::tuple::GenericCell for QCell<T> {
     type Value = T;
 
@@ -241,7 +242,10 @@ unsafe impl<T> crate::tuple::GenericCell for QCell<T> {
     }
 }
 
-pub unsafe trait CheckOwner {
+/// # Safety
+/// 
+/// Must only be implemented for type-lists of &QCell
+pub unsafe trait CheckOwner: crate::Sealed {
     fn is_owned_by(&self, owner: OwnerID) -> bool;
 }
 

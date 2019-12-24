@@ -120,6 +120,7 @@ impl<'id> LCellOwner<'id> {
     }
 }
 
+impl<T> crate::Sealed for LCell<'_, T> {}
 unsafe impl<T> crate::tuple::GenericCell for LCell<'_, T> {
     type Value = T;
 
@@ -128,7 +129,10 @@ unsafe impl<T> crate::tuple::GenericCell for LCell<'_, T> {
     }
 }
 
-pub unsafe trait GenericLCellList<'id> {}
+/// # Safety
+/// 
+/// Must only be implemented for type-lists of &LCell
+pub unsafe trait GenericLCellList<'id>: crate::Sealed {}
 
 unsafe impl GenericLCellList<'_> for crate::tuple::Nil {}
 unsafe impl<'id, T, R> GenericLCellList<'id> for crate::tuple::Cons<&LCell<'id, T>, R>

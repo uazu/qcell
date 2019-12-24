@@ -318,6 +318,11 @@ extern crate lazy_static;
 
 mod macros;
 
+use internal::Sealed;
+mod internal {
+    pub trait Sealed {}
+}
+
 mod lcell;
 mod qcell;
 mod tcell;

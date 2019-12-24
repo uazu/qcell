@@ -109,6 +109,7 @@ impl<Q: 'static> TLCellOwner<Q> {
     }
 }
 
+impl<Q, T> crate::Sealed for TLCell<Q, T> {}
 unsafe impl<Q, T> crate::tuple::GenericCell for TLCell<Q, T> {
     type Value = T;
 
@@ -117,7 +118,10 @@ unsafe impl<Q, T> crate::tuple::GenericCell for TLCell<Q, T> {
     }
 }
 
-pub unsafe trait GenericTLCellList<Q> {}
+/// # Safety
+/// 
+/// Must only be implemented for type-lists of &TLCell
+pub unsafe trait GenericTLCellList<Q>: crate::Sealed {}
 
 unsafe impl<Q> GenericTLCellList<Q> for crate::tuple::Nil {}
 unsafe impl<Q, T, R> GenericTLCellList<Q> for crate::tuple::Cons<&TLCell<Q, T>, R>
