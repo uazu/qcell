@@ -1,3 +1,49 @@
+//! This module holds the lion's share of the magic that makes var-args emulation possible
+//! 
+//! This is heavily inspired by [`frunk`](https://crates.io/crates/frunk/),
+//! so please look into that for more details about how type-lists work.
+//! 
+//! # Types and Traits
+//! 
+//! `Cons` and `Nil` are the backbone of the type-lists. They form a sort of
+//! compile time managed linked list. `Nil` signifies the end of the type-list,
+//! and `Cons` contains the current node's value, and the rest of the type-list.
+//! 
+//! `GenericCell` is a generalization of `QCell`, `TCell`, `TLCell`, and `LCell`.
+//! This allows `LoadValues` to be written generically.
+//! 
+//! `LoadValues` gets a iterates through the type-list using `impl` for `Cons`
+//! and `Nil` and extracts a unique reference to each element in the type-list.
+//! `Nil` yields `Nil` because `Nil` means the empty list, so nothing to extract
+//! `Cons<&C, R>` yields `Cons<&mut C::Value, R::Output>` because `C` is one of
+//! the cells listed above, and `R` is a recusion, going through `LoadValues` again
+//! 
+//! `ValidateUniqueness` works in a similar way. It uses the property `IterAddresses`
+//! to extract out the addresses of the cells. It then recusively iterates through the
+//! cells in the list and checks that all of the addresses are unique.
+//! 
+//! `IterAddresses` will yield the addresses (as usizes) of all items in the type-list.
+//! 
+//! The strategy for checking uniqueness is, ensure that all cells have a different address from 
+//! all cells after them. This triangle strategy is guaranteed to pair-wise check each
+//! and every possible pair of addresses exactly once.
+//! 
+//! ```text
+//! For example, let's check the addresses [0, 1, 2, 3]
+//! 
+//! 0 will be checked against [1, 2, 3]
+//! 1 will be checked against [2, 3]
+//! 2 will be checked against [3]
+//! 3 will be checked against []
+//! ```
+//! 
+//! This finite number of deterministic const-propogation compatible checks
+//! are really easy for LLVM to optimize away, and in the happy path, LLVM 
+//! will completely eliminate all checks. In fact, all of the type-list shennanigans 
+//! are super optimzable because they are `inline`, fully deterministic, and
+//! play really well with const-propogation.
+//! 
+//! 
 
 pub struct Nil;
 

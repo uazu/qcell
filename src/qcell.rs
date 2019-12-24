@@ -246,9 +246,11 @@ unsafe impl<T> crate::tuple::GenericCell for QCell<T> {
     }
 }
 
+/// Checks if the current `QCell` is owned by the `owner`.
+/// 
 /// # Safety
 /// 
-/// Must only be implemented for type-lists of &QCell
+/// Must only be implemented for type-lists of `&QCell`
 pub unsafe trait CheckOwner: crate::Sealed {
     fn is_owned_by(&self, owner: OwnerID) -> bool;
 }

@@ -118,9 +118,11 @@ unsafe impl<Q, T> crate::tuple::GenericCell for TLCell<Q, T> {
     }
 }
 
+/// A marker trait that ensures that only `TLCells` get accepted for `TLCellOwner::rw_generic`
+/// 
 /// # Safety
 /// 
-/// Must only be implemented for type-lists of &TLCell
+/// Must only be implemented for type-lists of `&TLCell`
 pub unsafe trait GenericTLCellList<Q>: crate::Sealed {}
 
 unsafe impl<Q> GenericTLCellList<Q> for crate::tuple::Nil {}
