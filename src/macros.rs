@@ -10,7 +10,7 @@ macro_rules! rw {
     };
     (@tuple $value:expr $(, $rest:expr)*) => {
         $crate::tuple::Cons {
-            value: &$value,
+            value: $value,
             rest: $crate::rw!(@tuple $($rest),*)
         }
     };

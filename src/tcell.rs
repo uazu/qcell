@@ -78,7 +78,7 @@ impl<Q: 'static> TCellOwner<Q> {
         tc1: &'a TCell<Q, T>,
         tc2: &'a TCell<Q, U>,
     ) -> (&'a mut T, &'a mut U) {
-        crate::rw!(self => *tc1, *tc2)
+        crate::rw!(self => tc1, tc2)
     }
 
     /// Borrow contents of three `TCell` instances mutably.  Panics if
@@ -90,7 +90,7 @@ impl<Q: 'static> TCellOwner<Q> {
         tc2: &'a TCell<Q, U>,
         tc3: &'a TCell<Q, V>,
     ) -> (&'a mut T, &'a mut U, &'a mut V) {
-        crate::rw!(self => *tc1, *tc2, *tc3)
+        crate::rw!(self => tc1, tc2, tc3)
     }
 
     /// Borrow the contents of any number of `LCell` instances mutably.  Panics if

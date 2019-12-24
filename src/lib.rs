@@ -323,7 +323,8 @@ mod qcell;
 mod tcell;
 mod tlcell;
 
-mod tuple;
+#[doc(hidden)]
+pub mod tuple;
 
 pub mod doctest_lcell;
 pub mod doctest_qcell;

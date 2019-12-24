@@ -190,7 +190,7 @@ impl QCellOwner {
     /// another can be borrowed.  Panics if the `QCell` is not owned
     /// by this `QCellOwner`.
     pub fn rw<'a, T>(&'a mut self, qc: &'a QCell<T>) -> &'a mut T {
-        crate::rw!(self => *qc).0
+        crate::rw!(self => qc).0
     }
 
     /// Borrow contents of two `QCell` instances mutably.  Panics if
@@ -201,7 +201,7 @@ impl QCellOwner {
         qc1: &'a QCell<T>,
         qc2: &'a QCell<U>,
     ) -> (&'a mut T, &'a mut U) {
-        crate::rw!(self => *qc1, *qc2)
+        crate::rw!(self => qc1, qc2)
     }
 
     /// Borrow contents of three `QCell` instances mutably.  Panics if
@@ -213,7 +213,7 @@ impl QCellOwner {
         qc2: &'a QCell<U>,
         qc3: &'a QCell<V>,
     ) -> (&'a mut T, &'a mut U, &'a mut V) {
-        crate::rw!(self => *qc1, *qc2, *qc3)
+        crate::rw!(self => qc1, qc2, qc3)
     }
 
     /// Borrow the contents of any number of `LCell` instances mutably.  Panics if

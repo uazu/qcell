@@ -90,7 +90,7 @@ impl<'id> LCellOwner<'id> {
         lc1: &'a LCell<'id, T>,
         lc2: &'a LCell<'id, U>,
     ) -> (&'a mut T, &'a mut U) {
-        crate::rw!(self => *lc1, *lc2)
+        crate::rw!(self => lc1, lc2)
     }
 
     /// Borrow contents of three `LCell` instances mutably.  Panics if
@@ -102,7 +102,7 @@ impl<'id> LCellOwner<'id> {
         lc2: &'a LCell<'id, U>,
         lc3: &'a LCell<'id, V>,
     ) -> (&'a mut T, &'a mut U, &'a mut V) {
-        crate::rw!(self => *lc1, *lc2, *lc3)
+        crate::rw!(self => lc1, lc2, lc3)
     }
 
     /// Borrow the contents of any number of `LCell` instances mutably.  Panics if
