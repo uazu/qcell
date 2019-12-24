@@ -316,10 +316,14 @@
 #[macro_use]
 extern crate lazy_static;
 
+mod macros;
+
 mod lcell;
 mod qcell;
 mod tcell;
 mod tlcell;
+
+mod tuple;
 
 pub mod doctest_lcell;
 pub mod doctest_qcell;

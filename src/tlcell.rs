@@ -3,6 +3,8 @@ use std::cell::UnsafeCell;
 use std::collections::HashSet;
 use std::marker::PhantomData;
 
+use crate::tuple::{ValidateUniqueness, LoadValues};
+
 std::thread_local! {
     static SINGLETON_CHECK: std::cell::RefCell<HashSet<TypeId>> = std::cell::RefCell::new(HashSet::new());
 }
@@ -77,11 +79,7 @@ impl<Q: 'static> TLCellOwner<Q> {
         tc1: &'a TLCell<Q, T>,
         tc2: &'a TLCell<Q, U>,
     ) -> (&'a mut T, &'a mut U) {
-        assert!(
-            tc1 as *const _ as usize != tc2 as *const _ as usize,
-            "Illegal to borrow same TLCell twice with rw2()"
-        );
-        unsafe { (&mut *tc1.value.get(), &mut *tc2.value.get()) }
+        crate::rw!(self => *tc1, *tc2)
     }
 
     /// Borrow contents of three `TLCell` instances mutably.  Panics if
@@ -93,21 +91,39 @@ impl<Q: 'static> TLCellOwner<Q> {
         tc2: &'a TLCell<Q, U>,
         tc3: &'a TLCell<Q, V>,
     ) -> (&'a mut T, &'a mut U, &'a mut V) {
-        assert!(
-            (tc1 as *const _ as usize != tc2 as *const _ as usize)
-                && (tc2 as *const _ as usize != tc3 as *const _ as usize)
-                && (tc3 as *const _ as usize != tc1 as *const _ as usize),
-            "Illegal to borrow same TLCell twice with rw3()"
-        );
+        crate::rw!(self => *tc1, *tc2, *tc3)
+    }
+
+    /// Borrow the contents of any number of `LCell` instances mutably.  Panics if
+    /// any pair of `LCell` instances point to the same memory.
+    #[inline]
+    pub fn rw_generic<'a, T>(&'a mut self, tcells: T) -> T::Output
+    where
+        T: GenericTLCellList<Q> + LoadValues<'a> + ValidateUniqueness
+    {
+        assert!(tcells.all_unique(), "Illegal to borrow same LCell multiple times");
+
         unsafe {
-            (
-                &mut *tc1.value.get(),
-                &mut *tc2.value.get(),
-                &mut *tc3.value.get(),
-            )
+            tcells.load_values()
         }
     }
 }
+
+unsafe impl<Q, T> crate::tuple::GenericCell for TLCell<Q, T> {
+    type Value = T;
+
+    fn rw_ptr(&self) -> *mut Self::Value {
+        self.value.get()
+    }
+}
+
+pub unsafe trait GenericTLCellList<Q> {}
+
+unsafe impl<Q> GenericTLCellList<Q> for crate::tuple::Nil {}
+unsafe impl<Q, T, R> GenericTLCellList<Q> for crate::tuple::Cons<&TLCell<Q, T>, R>
+where
+    R: GenericTLCellList<Q>
+{}
 
 /// Cell whose contents is owned (for borrowing purposes) by a
 /// [`TLCellOwner`].

@@ -1,6 +1,8 @@
 use std::cell::{Cell, UnsafeCell};
 use std::marker::PhantomData;
 
+use crate::tuple::{ValidateUniqueness, LoadValues};
+
 type Id<'id> = PhantomData<Cell<&'id mut ()>>;
 
 /// Borrowing-owner of zero or more [`LCell`](struct.LCell.html)
@@ -88,11 +90,7 @@ impl<'id> LCellOwner<'id> {
         lc1: &'a LCell<'id, T>,
         lc2: &'a LCell<'id, U>,
     ) -> (&'a mut T, &'a mut U) {
-        assert!(
-            lc1 as *const _ as usize != lc2 as *const _ as usize,
-            "Illegal to borrow same LCell twice with rw2()"
-        );
-        unsafe { (&mut *lc1.value.get(), &mut *lc2.value.get()) }
+        crate::rw!(self => *lc1, *lc2)
     }
 
     /// Borrow contents of three `LCell` instances mutably.  Panics if
@@ -104,21 +102,39 @@ impl<'id> LCellOwner<'id> {
         lc2: &'a LCell<'id, U>,
         lc3: &'a LCell<'id, V>,
     ) -> (&'a mut T, &'a mut U, &'a mut V) {
-        assert!(
-            (lc1 as *const _ as usize != lc2 as *const _ as usize)
-                && (lc2 as *const _ as usize != lc3 as *const _ as usize)
-                && (lc3 as *const _ as usize != lc1 as *const _ as usize),
-            "Illegal to borrow same LCell twice with rw3()"
-        );
+        crate::rw!(self => *lc1, *lc2, *lc3)
+    }
+
+    /// Borrow the contents of any number of `LCell` instances mutably.  Panics if
+    /// any pair of `LCell` instances point to the same memory.
+    #[inline]
+    pub fn rw_generic<'a, T>(&'a mut self, lcells: T) -> T::Output
+    where
+        T: GenericLCellList<'id> + LoadValues<'a> + ValidateUniqueness
+    {
+        assert!(lcells.all_unique(), "Illegal to borrow same LCell multiple times");
+
         unsafe {
-            (
-                &mut *lc1.value.get(),
-                &mut *lc2.value.get(),
-                &mut *lc3.value.get(),
-            )
+            lcells.load_values()
         }
     }
 }
+
+unsafe impl<T> crate::tuple::GenericCell for LCell<'_, T> {
+    type Value = T;
+
+    fn rw_ptr(&self) -> *mut Self::Value {
+        self.value.get()
+    }
+}
+
+pub unsafe trait GenericLCellList<'id> {}
+
+unsafe impl GenericLCellList<'_> for crate::tuple::Nil {}
+unsafe impl<'id, T, R> GenericLCellList<'id> for crate::tuple::Cons<&LCell<'id, T>, R>
+where
+    R: GenericLCellList<'id>
+{}
 
 /// Cell whose contents are owned (for borrowing purposes) by a
 /// [`LCellOwner`].
