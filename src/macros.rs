@@ -33,7 +33,7 @@ macro_rules! rw {
     ($owner:expr => $($value:expr),+ $(,)?) => {{
         let output = $owner.rw_generic($crate::rw!(@tuple $($value),*));
 
-        $crate::rw!(@destruct [$($value),*] [] output)
+        $crate::rw! { @destruct [$($value),*] [] output }
     }};
     (@tuple) => {
         $crate::tuple::Nil
@@ -44,13 +44,13 @@ macro_rules! rw {
             rest: $crate::rw!(@tuple $($rest),*)
         }
     };
-    (@destruct [] [$($tup:expr),* $(,)?] $value:expr) => {{
+    (@destruct [] [$($tup:expr),* $(,)?] $value:expr) => {
         let $crate::tuple::Nil = $value;
         ($($tup),*)
-    }};
-    (@destruct [$a:expr $(, $rest:expr)*] [$($tup:tt)*] $value:expr) => {{
+    };
+    (@destruct [$a:expr $(, $rest:expr)*] [$($tup:tt)*] $value:expr) => {
         let $crate::tuple::Cons { value, rest } = $value;
 
-        $crate::rw!(@destruct [$($rest),*] [$($tup)* value,] rest)
-    }};
+        $crate::rw! { @destruct [$($rest),*] [$($tup)* value,] rest }
+    };
 }
