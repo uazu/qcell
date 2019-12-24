@@ -151,6 +151,10 @@ impl QCellOwner {
     /// unsafe behaviour once that bug is fixed.  So whilst
     /// strictly-speaking this call is unsafe, in practice there is no
     /// risk unless you really try hard to exploit it.
+    /// 
+    /// # Safety
+    /// 
+    /// You should not use this to create more than `isize::max_value()` QCellOwners
     pub unsafe fn fast_new() -> Self {
         Self {
             // Range 0x80000000 to 0xFFFFFFFF reserved for fast
