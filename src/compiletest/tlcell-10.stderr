@@ -1,0 +1,11 @@
+error[E0277]: `*const main::Marker` cannot be sent between threads safely
+ --> $DIR/tlcell-10.rs:8:5
+  |
+7 |     fn is_send<T: Send>() {}
+  |        -------    ---- required by this bound in `main::is_send`
+8 |     is_send::<TLCellOwner<Marker>>();  // Compile fail
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `*const main::Marker` cannot be sent between threads safely
+  |
+  = help: within `qcell::TLCellOwner<main::Marker>`, the trait `std::marker::Send` is not implemented for `*const main::Marker`
+  = note: required because it appears within the type `std::marker::PhantomData<*const main::Marker>`
+  = note: required because it appears within the type `qcell::TLCellOwner<main::Marker>`

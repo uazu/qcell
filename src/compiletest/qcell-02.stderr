@@ -1,0 +1,9 @@
+error[E0499]: cannot borrow `owner` as mutable more than once at a time
+  --> $DIR/qcell-02.rs:12:20
+   |
+11 |     let c1mutref = owner.rw(&c1);
+   |                    ----- first mutable borrow occurs here
+12 |     let c2mutref=  owner.rw(&c2);  // Compile error
+   |                    ^^^^^ second mutable borrow occurs here
+13 |     *c1mutref += 1;
+   |     -------------- first borrow later used here

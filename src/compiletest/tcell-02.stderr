@@ -1,0 +1,8 @@
+error[E0308]: mismatched types
+  --> $DIR/tcell-02.rs:18:28
+   |
+18 |     let c1ref = owner_b.ro(&*c1);   // Compile error
+   |                            ^^^^ expected struct `main::MarkerB`, found struct `main::MarkerA`
+   |
+   = note: expected type `&qcell::TCell<main::MarkerB, _>`
+              found type `&qcell::TCell<main::MarkerA, u32>`

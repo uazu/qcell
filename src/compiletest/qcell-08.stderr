@@ -1,0 +1,29 @@
+error[E0505]: cannot move out of `owner` because it is borrowed
+  --> $DIR/qcell-08.rs:9:24
+   |
+8  |     let val_ref = owner.ro(&cell);
+   |                   ----- borrow of `owner` occurs here
+9  |     std::thread::spawn(move || {
+   |                        ^^^^^^^ move out of `owner` occurs here
+10 |         assert_eq!(*owner.ro(&cell), 100);
+   |                     ----- move occurs due to use in closure
+11 |     }).join();
+12 |     assert_eq!(*val_ref, 100);
+   |     -------------------------- borrow later used here
+   |
+   = note: this error originates in a macro outside of the current crate (in Nightly builds, run with -Z external-macro-backtrace for more info)
+
+error[E0505]: cannot move out of `cell` because it is borrowed
+  --> $DIR/qcell-08.rs:9:24
+   |
+8  |     let val_ref = owner.ro(&cell);
+   |                            ----- borrow of `cell` occurs here
+9  |     std::thread::spawn(move || {
+   |                        ^^^^^^^ move out of `cell` occurs here
+10 |         assert_eq!(*owner.ro(&cell), 100);
+   |                               ---- move occurs due to use in closure
+11 |     }).join();
+12 |     assert_eq!(*val_ref, 100);
+   |     -------------------------- borrow later used here
+   |
+   = note: this error originates in a macro outside of the current crate (in Nightly builds, run with -Z external-macro-backtrace for more info)

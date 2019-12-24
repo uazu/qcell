@@ -1,0 +1,21 @@
+error[E0277]: `std::rc::Rc<()>` cannot be sent between threads safely
+ --> $DIR/qcell-11.rs:8:5
+  |
+7 |     fn is_sync<T: Sync>() {}
+  |        -------    ---- required by this bound in `main::is_sync`
+8 |     is_sync::<QCell<Rc<()>>>();  // Compile fail
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^ `std::rc::Rc<()>` cannot be sent between threads safely
+  |
+  = help: the trait `std::marker::Send` is not implemented for `std::rc::Rc<()>`
+  = note: required because of the requirements on the impl of `std::marker::Sync` for `qcell::QCell<std::rc::Rc<()>>`
+
+error[E0277]: `std::rc::Rc<()>` cannot be shared between threads safely
+ --> $DIR/qcell-11.rs:8:5
+  |
+7 |     fn is_sync<T: Sync>() {}
+  |        -------    ---- required by this bound in `main::is_sync`
+8 |     is_sync::<QCell<Rc<()>>>();  // Compile fail
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^ `std::rc::Rc<()>` cannot be shared between threads safely
+  |
+  = help: the trait `std::marker::Sync` is not implemented for `std::rc::Rc<()>`
+  = note: required because of the requirements on the impl of `std::marker::Sync` for `qcell::QCell<std::rc::Rc<()>>`

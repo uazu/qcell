@@ -1,0 +1,9 @@
+error[E0505]: cannot move out of `c1` because it is borrowed
+  --> $DIR/tcell-07.rs:15:10
+   |
+14 |     let c1ref = owner.ro(&c1);
+   |                          --- borrow of `c1` occurs here
+15 |     drop(c1);    // Compile error
+   |          ^^ move out of `c1` occurs here
+16 |     println!("{}", *c1ref);
+   |                    ------ borrow later used here

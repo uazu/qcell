@@ -335,3 +335,19 @@ pub use crate::tcell::TCell;
 pub use crate::tcell::TCellOwner;
 pub use crate::tlcell::TLCell;
 pub use crate::tlcell::TLCellOwner;
+
+// The compile-tests double-check that the compile_fail tests in the
+// doctests actually fail for the reason intended, not for some other
+// reason.  This is most useful to check when making changes to the
+// crate.  However since the compiler error messages may change from
+// one release to the next, the tests only remain valid for a certain
+// range of compiler versions.
+#[cfg(test)]
+pub mod compiletest {
+    #[rustversion::all(stable, since(1.39), before(1.40))]
+    #[test]
+    fn ui() {
+        let t = trybuild::TestCases::new();
+        t.compile_fail("src/compiletest/*.rs");
+    }
+}

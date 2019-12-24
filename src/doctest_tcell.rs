@@ -1,3 +1,6 @@
+// Run ./update-compiletest-from-doctest.pl in crate base directory
+// after making any modification to compile_fail tests here.
+
 //! This tests the `TCell` implementation.
 //!
 //! It's not possible to have two simultaneous owners for the same

@@ -1,0 +1,10 @@
+error[E0277]: `*const main::Marker` cannot be sent between threads safely
+   --> $DIR/tlcell-13.rs:12:5
+    |
+12  |     std::thread::spawn(move || {
+    |     ^^^^^^^^^^^^^^^^^^ `*const main::Marker` cannot be sent between threads safely
+    |
+    = help: within `[closure@$DIR/src/compiletest/tlcell-13.rs:12:24: 14:6 owner:qcell::TLCellOwner<main::Marker>, cell:qcell::TLCell<main::Marker, i32>]`, the trait `std::marker::Send` is not implemented for `*const main::Marker`
+    = note: required because it appears within the type `std::marker::PhantomData<*const main::Marker>`
+    = note: required because it appears within the type `qcell::TLCellOwner<main::Marker>`
+    = note: required because it appears within the type `[closure@$DIR/src/compiletest/tlcell-13.rs:12:24: 14:6 owner:qcell::TLCellOwner<main::Marker>, cell:qcell::TLCell<main::Marker, i32>]`

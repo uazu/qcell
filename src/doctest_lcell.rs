@@ -1,3 +1,6 @@
+// Run ./update-compiletest-from-doctest.pl in crate base directory
+// after making any modification to compile_fail tests here.
+
 //! This tests the `LCell` implementation.
 //!
 //! It should be impossible to copy a `&mut LCellOwner`:

@@ -1,0 +1,5 @@
+error[E0599]: no method named `clone` found for type `qcell::QCellOwner` in the current scope
+ --> $DIR/qcell-01.rs:8:25
+  |
+8 |     let owner2 = owner1.clone();  // Compile fail
+  |                         ^^^^^ method not found in `qcell::QCellOwner`

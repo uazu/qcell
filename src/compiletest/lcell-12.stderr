@@ -1,0 +1,10 @@
+error[E0277]: `std::cell::Cell<i32>` cannot be shared between threads safely
+  --> $DIR/lcell-12.rs:12:28
+   |
+12 |             let handle = s.spawn(|_| owner.ro(&cell).set(200));
+   |                            ^^^^^ `std::cell::Cell<i32>` cannot be shared between threads safely
+   |
+   = help: the trait `std::marker::Sync` is not implemented for `std::cell::Cell<i32>`
+   = note: required because of the requirements on the impl of `std::marker::Sync` for `qcell::LCell<'_, std::cell::Cell<i32>>`
+   = note: required because of the requirements on the impl of `std::marker::Send` for `&qcell::LCell<'_, std::cell::Cell<i32>>`
+   = note: required because it appears within the type `[closure@$DIR/src/compiletest/lcell-12.rs:12:34: 12:62 owner:&qcell::LCellOwner<'_>, cell:&qcell::LCell<'_, std::cell::Cell<i32>>]`

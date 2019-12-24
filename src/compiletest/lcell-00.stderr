@@ -1,0 +1,9 @@
+error[E0382]: borrow of moved value: `owner1`
+ --> $DIR/lcell-00.rs:9:26
+  |
+7 |     LCellOwner::scope(|mut owner1| {
+  |                        ---------- move occurs because `owner1` has type `qcell::LCellOwner<'_>`, which does not implement the `Copy` trait
+8 |         let owner2 = owner1;
+  |                      ------ value moved here
+9 |         let rc = Rc::new(owner1.cell(100u32)); // Compile fail
+  |                          ^^^^^^ value borrowed here after move
