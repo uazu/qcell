@@ -94,6 +94,8 @@ impl<Q: 'static> TLCellOwner<Q> {
         crate::rw!(self => tc1, tc2, tc3)
     }
 
+    /// This method is not meant to be used directly, use the `qcell::rw` macro instead
+    /// 
     /// Borrow the contents of any number of `LCell` instances mutably.  Panics if
     /// any pair of `LCell` instances point to the same memory.
     #[inline]
