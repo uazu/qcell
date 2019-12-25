@@ -337,7 +337,7 @@ pub mod doctest_tcell;
 pub mod doctest_tlcell;
 
 pub use crate::value_cell::{ValueCell, ValueCellOwner};
-pub use crate::qcell_impl::{RuntimeOwner as QCellOwner, RuntimeProxy, QCell};
+pub use crate::qcell_impl::{QCellOwner, QCellOwnerID, QCell};
 pub use crate::tcell_impl::{SingletonOwner as TCellOwner, SingletonProxy, TCell};
 pub use crate::tlcell_impl::{ThreadLocalSingletonOwner as TLCellOwner, ThreadLocalSingletonProxy, TLCell};
 pub use crate::lcell_impl::{LifetimeOwner as LCellOwner, LifetimeProxy, LCell};
