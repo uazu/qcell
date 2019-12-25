@@ -2,11 +2,13 @@ use core::marker::PhantomData;
 
 use crate::{ValueCell, ValueCellOwner};
 
+type Invariant<'mark> = PhantomData<&'mark mut &'mark ()>;
+
 pub type LCell<'mark, T> = ValueCell<LifetimeOwner<'mark>, T>;
 
-pub struct LifetimeOwner<'mark>(PhantomData<&'mark mut &'mark ()>);
+pub struct LifetimeOwner<'mark>(Invariant<'mark>);
 
-pub struct LifetimeProxy<'mark>(PhantomData<&'mark mut &'mark ()>);
+pub struct LifetimeProxy<'mark>(Invariant<'mark>);
 
 impl LifetimeOwner<'_> {
     pub fn scope<F: FnOnce(LifetimeOwner<'_>) -> R, R>(f: F) -> R {
