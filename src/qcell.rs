@@ -158,6 +158,11 @@ impl QCellOwner {
         }
     }
 
+    /// Check if `self` owns the given `QCell<T>`
+    pub const fn owns<T>(&self, cell: &QCell<T>) -> bool {
+        self.id == cell.owner
+    }
+
     /// Create a new cell owned by this owner instance.  See also
     /// [`QCell::new`].
     ///
@@ -277,6 +282,17 @@ impl<T> QCell<T> {
             value: UnsafeCell::new(value),
             owner: owner.id,
         }
+    }
+
+    /// Get a pointer into the cell
+    /// 
+    /// # Safety
+    /// 
+    /// It is only safe to write to this pointer while the cell is
+    /// not being held by a `ro` lock.
+    #[inline]
+    pub const fn as_ptr(&self) -> *mut T {
+        self.value.get()
     }
 }
 

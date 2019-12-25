@@ -134,6 +134,17 @@ impl<Q, T> TCell<Q, T> {
             value: UnsafeCell::new(value),
         }
     }
+
+    /// Get a pointer into the cell
+    /// 
+    /// # Safety
+    /// 
+    /// It is only safe to write to this pointer while the cell is
+    /// not being held by a `ro` lock.
+    #[inline]
+    pub const fn as_ptr(&self) -> *mut T {
+        self.value.get()
+    }
 }
 
 // It's fine to Send a TCell to a different thread if the containted
