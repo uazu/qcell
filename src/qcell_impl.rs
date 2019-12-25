@@ -4,12 +4,13 @@ use crate::{ValueCell, ValueCellOwner};
 static NEXT_ID: AtomicU32 = AtomicU32::new(0);
 
 pub type QCell<T> = ValueCell<RuntimeOwner, T>;
+type QCellId = u32;
 
 pub struct RuntimeOwner {
-    id: u32,
+    id: QCellId,
 }
 
-pub struct RuntimeProxy(u32);
+pub struct RuntimeProxy(QCellId);
 
 impl Default for RuntimeOwner {
     #[inline]
@@ -45,8 +46,12 @@ impl RuntimeOwner {
     }
 
     #[inline]
-    pub const unsafe fn from_id_unchecked(id: u32) -> Self {
+    pub const unsafe fn from_id_unchecked(id: QCellId) -> Self {
         Self { id }
+    }
+
+    pub unsafe fn set_next_id(id: QCellId) {
+        NEXT_ID.store(id, Relaxed)
     }
     
     #[inline]

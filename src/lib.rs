@@ -316,9 +316,13 @@
 #[macro_use]
 extern crate lazy_static;
 
+#[allow(unused)]
 mod lcell;
+#[allow(unused)]
 mod qcell;
+#[allow(unused)]
 mod tcell;
+#[allow(unused)]
 mod tlcell;
 mod value_cell;
 
