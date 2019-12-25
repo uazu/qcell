@@ -140,7 +140,7 @@ impl<Q, T> TCell<Q, T> {
     /// # Safety
     /// 
     /// It is only safe to write to this pointer while the cell is
-    /// not being held by a `ro` lock.
+    /// not being held by a `ro` or `rw` lock.
     #[inline]
     pub const fn as_ptr(&self) -> *mut T {
         self.value.get()
