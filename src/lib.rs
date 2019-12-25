@@ -320,12 +320,14 @@ mod lcell;
 mod qcell;
 mod tcell;
 mod tlcell;
+mod value_cell;
 
 pub mod doctest_lcell;
 pub mod doctest_qcell;
 pub mod doctest_tcell;
 pub mod doctest_tlcell;
 
+pub use crate::value_cell::{ValueCell, ValueCellOwner};
 pub use crate::lcell::LCell;
 pub use crate::lcell::LCellOwner;
 pub use crate::qcell::QCell;
