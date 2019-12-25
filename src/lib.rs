@@ -322,21 +322,21 @@ mod tcell;
 mod tlcell;
 mod value_cell;
 
+mod qcell_impl;
+mod tcell_impl;
+mod tlcell_impl;
+mod lcell_impl;
+
 pub mod doctest_lcell;
 pub mod doctest_qcell;
 pub mod doctest_tcell;
 pub mod doctest_tlcell;
 
 pub use crate::value_cell::{ValueCell, ValueCellOwner};
-pub use crate::lcell::LCell;
-pub use crate::lcell::LCellOwner;
-pub use crate::qcell::QCell;
-pub use crate::qcell::QCellOwner;
-pub use crate::qcell::QCellOwnerID;
-pub use crate::tcell::TCell;
-pub use crate::tcell::TCellOwner;
-pub use crate::tlcell::TLCell;
-pub use crate::tlcell::TLCellOwner;
+pub use crate::qcell_impl::{RuntimeOwner as QCellOwner, RuntimeProxy, QCell};
+pub use crate::tcell_impl::{SingletonOwner as TCellOwner, SingletonProxy, TCell};
+pub use crate::tlcell_impl::{ThreadLocalSingletonOwner as TLCellOwner, ThreadLocalSingletonProxy, TLCell};
+pub use crate::lcell_impl::{LifetimeOwner as LCellOwner, LifetimeProxy, LCell};
 
 // The compile-tests double-check that the compile_fail tests in the
 // doctests actually fail for the reason intended, not for some other

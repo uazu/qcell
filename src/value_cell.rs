@@ -38,12 +38,31 @@ pub unsafe trait ValueCellOwner: Sized {
         assert_ne!(c1 as *const _ as *const () as usize, c2 as *const _ as *const () as usize, "You cannot uniquely borrow the same cell multiple times");
         unsafe { (&mut *c1.as_ptr(), &mut *c2.as_ptr()) }
     }
+
+    fn rw3<'a, T: ?Sized, U: ?Sized, V: ?Sized>(
+        &'a mut self,
+        c1: &'a ValueCell<Self, T>,
+        c2: &'a ValueCell<Self, U>,
+        c3: &'a ValueCell<Self, V>,
+    ) -> (&'a mut T, &'a mut U, &'a mut V) {
+        assert!(self.owns(c1), "You cannot borrow from a `ValueCell` using a different owner!");
+        assert!(self.owns(c2), "You cannot borrow from a `ValueCell` using a different owner!");
+        assert_ne!(c1 as *const _ as *const () as usize, c2 as *const _ as *const () as usize, "You cannot uniquely borrow the same cell multiple times");
+        assert_ne!(c1 as *const _ as *const () as usize, c3 as *const _ as *const () as usize, "You cannot uniquely borrow the same cell multiple times");
+        assert_ne!(c2 as *const _ as *const () as usize, c3 as *const _ as *const () as usize, "You cannot uniquely borrow the same cell multiple times");
+        unsafe { (&mut *c1.as_ptr(), &mut *c2.as_ptr(), &mut *c3.as_ptr()) }
+    }
 }
 
 pub struct ValueCell<O: ValueCellOwner, T: ?Sized> {
     proxy: O::Proxy,
     value: UnsafeCell<T>
 }
+
+unsafe impl<O: ValueCellOwner, T: ?Sized> Sync for ValueCell<O, T>
+where
+    O::Proxy: Sync,
+    T: Send + Sync {}
 
 impl<O: ValueCellOwner, T> ValueCell<O, T> {
     pub fn into_value(self) -> T {
