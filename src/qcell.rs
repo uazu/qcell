@@ -306,6 +306,21 @@ mod tests {
         // Cargo.toml.  So use a lock instead.
         static ref LOCK: Mutex<()> = Mutex::new(());
     }
+
+    #[test]
+    fn qcell_owner() {
+        let _lock = LOCK.lock().unwrap();
+        let owner = QCellOwner::new();
+        let other = QCellOwner::new();
+        let c1 = QCell::new(&owner, 100u32);
+        let c2 = QCell::new(&other, 200u32);
+        
+        assert!(owner.owns(&c1));
+        assert!(!owner.owns(&c2));
+        assert!(!other.owns(&c1));
+        assert!(other.owns(&c2));
+    }
+
     #[test]
     fn qcell() {
         let _lock = LOCK.lock().unwrap();
