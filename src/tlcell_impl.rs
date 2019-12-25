@@ -72,7 +72,7 @@ impl<Mark> ThreadLocalSingletonOwner<Mark> {
 impl<Mark, T> TLCell<Mark, T> {
     #[inline]
     pub fn new(value: T) -> Self {
-        ThreadLocalSingletonOwner(PhantomData).cell(value)
+        Self::from_proxy(ThreadLocalSingletonProxy(PhantomData), value)
     }
 }
 

@@ -72,7 +72,7 @@ impl<Mark> SingletonOwner<Mark> {
 impl<Mark, T> TCell<Mark, T> {
     #[inline]
     pub fn new(value: T) -> Self {
-        SingletonOwner(PhantomData).cell(value)
+        Self::from_proxy(SingletonProxy(PhantomData), value)
     }
 }
 

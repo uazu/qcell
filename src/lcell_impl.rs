@@ -51,7 +51,7 @@ impl LifetimeOwner<'_> {
 impl<T> LCell<'_, T> {
     #[inline]
     pub fn new(value: T) -> Self {
-        LifetimeOwner(PhantomData).cell(value)
+        Self::from_proxy(LifetimeProxy(PhantomData), value)
     }
 }
 

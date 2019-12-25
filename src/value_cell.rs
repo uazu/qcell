@@ -65,6 +65,10 @@ where
     T: Send + Sync {}
 
 impl<O: ValueCellOwner, T> ValueCell<O, T> {
+    pub fn from_proxy(proxy: O::Proxy, value: T) -> Self {
+        Self { proxy, value: UnsafeCell::new(value) }
+    }
+
     pub fn into_value(self) -> T {
         self.value.into_inner()
     }
