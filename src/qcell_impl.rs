@@ -38,6 +38,16 @@ impl RuntimeOwner {
 
         Self { id }
     }
+
+    #[inline]
+    pub unsafe fn new_unchecked() -> Self {
+        Self::from_id_unchecked(NEXT_ID.fetch_add(1, Relaxed))
+    }
+
+    #[inline]
+    pub const unsafe fn from_id_unchecked(id: u32) -> Self {
+        Self { id }
+    }
     
     #[inline]
     pub fn ro<'a, T: ?Sized>(&'a self, cell: &'a ValueCell<Self, T>) -> &'a T {
