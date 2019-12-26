@@ -10,7 +10,7 @@ pub type TLCell<Mark, T> = ValueCell<ThreadLocalSingletonOwner<Mark>, T>;
 
 pub struct ThreadLocalSingletonOwner<Mark>(PhantomData<*mut Mark>);
 
-pub struct ThreadLocalSingletonProxy<Mark>(PhantomData<RefCell<Mark>>);
+pub struct ThreadLocalSingletonMarker<Mark>(PhantomData<RefCell<Mark>>);
 
 thread_local! {
     static OWNERS: RefCell<HashSet<TypeId>> = RefCell::default();
@@ -72,20 +72,20 @@ impl<Mark> ThreadLocalSingletonOwner<Mark> {
 impl<Mark, T> TLCell<Mark, T> {
     #[inline]
     pub fn new(value: T) -> Self {
-        Self::from_proxy(ThreadLocalSingletonProxy(PhantomData), value)
+        Self::from_marker(ThreadLocalSingletonMarker(PhantomData), value)
     }
 }
 
 unsafe impl<Mark> ValueCellOwner for ThreadLocalSingletonOwner<Mark> {
-    type Proxy = ThreadLocalSingletonProxy<Mark>;
+    type Marker = ThreadLocalSingletonMarker<Mark>;
 
     #[inline]
-    fn validate_proxy(&self, &ThreadLocalSingletonProxy(PhantomData): &Self::Proxy) -> bool {
+    fn validate_marker(&self, &ThreadLocalSingletonMarker(PhantomData): &Self::Marker) -> bool {
         true
     }
 
     #[inline]
-    fn make_proxy(&self) -> Self::Proxy {
-        ThreadLocalSingletonProxy(PhantomData)
+    fn make_marker(&self) -> Self::Marker {
+        ThreadLocalSingletonMarker(PhantomData)
     }
 }

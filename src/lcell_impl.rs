@@ -12,7 +12,7 @@ pub type LCell<'mark, T> = ValueCell<LifetimeOwner<'mark>, T>;
 
 pub struct LifetimeOwner<'mark>(Invariant<'mark>);
 
-pub struct LifetimeProxy<'mark>(Invariant<'mark>);
+pub struct LifetimeMarker<'mark>(Invariant<'mark>);
 
 impl LifetimeOwner<'_> {
     pub fn scope<F: FnOnce(LifetimeOwner<'_>) -> R, R>(f: F) -> R {
@@ -57,20 +57,20 @@ impl LifetimeOwner<'_> {
 impl<T> LCell<'_, T> {
     #[inline]
     pub fn new(value: T) -> Self {
-        Self::from_proxy(LifetimeProxy(Invariant(PhantomData)), value)
+        Self::from_marker(LifetimeMarker(Invariant(PhantomData)), value)
     }
 }
 
 unsafe impl<'mark> ValueCellOwner for LifetimeOwner<'mark> {
-    type Proxy = LifetimeProxy<'mark>;
+    type Marker = LifetimeMarker<'mark>;
 
     #[inline]
-    fn validate_proxy(&self, &LifetimeProxy(Invariant(PhantomData)): &Self::Proxy) -> bool {
+    fn validate_marker(&self, &LifetimeMarker(Invariant(PhantomData)): &Self::Marker) -> bool {
         true
     }
 
     #[inline]
-    fn make_proxy(&self) -> Self::Proxy {
-        LifetimeProxy(Invariant(PhantomData))
+    fn make_marker(&self) -> Self::Marker {
+        LifetimeMarker(Invariant(PhantomData))
     }
 }

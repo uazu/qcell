@@ -29,7 +29,7 @@ impl QCellOwnerID {
     ///
     /// [`QCell::new`]: struct.QCell.html
     pub fn cell<T>(&self, value: T) -> ValueCell<QCellOwner, T> {
-        QCell::from_proxy(QCellOwnerID(self.0), value)
+        QCell::from_marker(QCellOwnerID(self.0), value)
     }
 }
 
@@ -184,15 +184,15 @@ impl QCellOwner {
 }
 
 unsafe impl ValueCellOwner for QCellOwner {
-    type Proxy = QCellOwnerID;
+    type Marker = QCellOwnerID;
 
     #[inline]
-    fn validate_proxy(&self, &QCellOwnerID(id): &Self::Proxy) -> bool {
+    fn validate_marker(&self, &QCellOwnerID(id): &Self::Marker) -> bool {
         self.id == id
     }
 
     #[inline]
-    fn make_proxy(&self) -> Self::Proxy {
+    fn make_marker(&self) -> Self::Marker {
         QCellOwnerID(self.id)
     }
 }
@@ -222,7 +222,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // TODO: ID reclaimation
+    #[ignore] // TODO: ID reclamation
     fn qcell_ids() {
         let _lock = LOCK.lock().unwrap();
         let owner1 = QCellOwner::new();

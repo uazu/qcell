@@ -10,7 +10,7 @@ pub type TCell<Mark, T> = ValueCell<SingletonOwner<Mark>, T>;
 
 pub struct SingletonOwner<Mark>(PhantomData<Mark>);
 
-pub struct SingletonProxy<Mark>(PhantomData<Mark>);
+pub struct SingletonMarker<Mark>(PhantomData<Mark>);
 
 lazy_static! {
     static ref OWNERS: Mutex<HashSet<TypeId>> = Mutex::default();
@@ -72,20 +72,20 @@ impl<Mark> SingletonOwner<Mark> {
 impl<Mark, T> TCell<Mark, T> {
     #[inline]
     pub fn new(value: T) -> Self {
-        Self::from_proxy(SingletonProxy(PhantomData), value)
+        Self::from_marker(SingletonMarker(PhantomData), value)
     }
 }
 
 unsafe impl<Mark> ValueCellOwner for SingletonOwner<Mark> {
-    type Proxy = SingletonProxy<Mark>;
+    type Marker = SingletonMarker<Mark>;
 
     #[inline]
-    fn validate_proxy(&self, &SingletonProxy(PhantomData): &Self::Proxy) -> bool {
+    fn validate_marker(&self, &SingletonMarker(PhantomData): &Self::Marker) -> bool {
         true
     }
 
     #[inline]
-    fn make_proxy(&self) -> Self::Proxy {
-        SingletonProxy(PhantomData)
+    fn make_marker(&self) -> Self::Marker {
+        SingletonMarker(PhantomData)
     }
 }

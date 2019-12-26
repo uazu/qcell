@@ -338,9 +338,9 @@ pub mod doctest_tlcell;
 
 pub use crate::value_cell::{ValueCell, ValueCellOwner};
 pub use crate::qcell_impl::{QCellOwner, QCellOwnerID, QCell};
-pub use crate::tcell_impl::{SingletonOwner as TCellOwner, SingletonProxy, TCell};
-pub use crate::tlcell_impl::{ThreadLocalSingletonOwner as TLCellOwner, ThreadLocalSingletonProxy, TLCell};
-pub use crate::lcell_impl::{LifetimeOwner as LCellOwner, LifetimeProxy, LCell};
+pub use crate::tcell_impl::{SingletonOwner as TCellOwner, SingletonMarker, TCell};
+pub use crate::tlcell_impl::{ThreadLocalSingletonOwner as TLCellOwner, ThreadLocalSingletonMarker, TLCell};
+pub use crate::lcell_impl::{LifetimeOwner as LCellOwner, LifetimeMarker, LCell};
 
 // The compile-tests double-check that the compile_fail tests in the
 // doctests actually fail for the reason intended, not for some other

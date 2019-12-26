@@ -1,21 +1,21 @@
 use core::cell::UnsafeCell;
 
 pub unsafe trait ValueCellOwner: Sized {
-    type Proxy;
+    type Marker;
 
-    fn validate_proxy(&self, proxy: &Self::Proxy) -> bool;
+    fn validate_marker(&self, marker: &Self::Marker) -> bool;
 
-    fn make_proxy(&self) -> Self::Proxy;
+    fn make_marker(&self) -> Self::Marker;
 
     fn cell<T>(&self, value: T) -> ValueCell<Self, T> {
         ValueCell {
-            proxy: self.make_proxy(),
+            marker: self.make_marker(),
             value: UnsafeCell::new(value)
         }
     }
 
     fn owns<T: ?Sized>(&self, cell: &ValueCell<Self, T>) -> bool {
-        self.validate_proxy(cell.proxy())
+        self.validate_marker(cell.marker())
     }
 
     fn ro<'a, T: ?Sized>(&'a self, cell: &'a ValueCell<Self, T>) -> &'a T {
@@ -55,18 +55,18 @@ pub unsafe trait ValueCellOwner: Sized {
 }
 
 pub struct ValueCell<O: ValueCellOwner, T: ?Sized> {
-    proxy: O::Proxy,
+    marker: O::Marker,
     value: UnsafeCell<T>
 }
 
 unsafe impl<O: ValueCellOwner, T: ?Sized> Sync for ValueCell<O, T>
 where
-    O::Proxy: Sync,
+    O::Marker: Sync,
     T: Send + Sync {}
 
 impl<O: ValueCellOwner, T> ValueCell<O, T> {
-    pub fn from_proxy(proxy: O::Proxy, value: T) -> Self {
-        Self { proxy, value: UnsafeCell::new(value) }
+    pub fn from_marker(marker: O::Marker, value: T) -> Self {
+        Self { marker, value: UnsafeCell::new(value) }
     }
 
     pub fn into_value(self) -> T {
@@ -79,8 +79,8 @@ impl<O: ValueCellOwner, T: ?Sized> ValueCell<O, T> {
         self.value.get()
     }
 
-    pub fn proxy(&self) -> &O::Proxy {
-        &self.proxy
+    pub fn marker(&self) -> &O::Marker {
+        &self.marker
     }
 
     pub fn value_mut(&mut self) -> &mut T {
