@@ -42,42 +42,13 @@ impl Default for QCellOwner {
 }
 
 impl QCellOwner {
-    #[allow(clippy::many_single_char_names)]
-    #[inline(always)]
-    fn id_from_u64(id: u64) -> QCellIDValue {
-        // this should compile down to a no-op
-        let [a, b, c, d, e, f, _, _]: [u8; 8] = id.to_le_bytes();
-
-        [a, b, c, d, e, f]
-    }
-
     /// Create an owner that can be used for creating many `QCell`
-    /// instances.  It will have a temporally unique ID associated
-    /// with it to detect using the wrong owner to access a cell at
-    /// runtime, which is a programming error.  This call will panic
-    /// if the limit of 2^31 owners active at the same time is
-    /// reached.  This is the slow and safe version that uses a mutex
-    /// and a free list to allocate IDs.  If speed of this call
-    /// matters, then consider using [`fast_new()`](#method.fast_new)
-    /// instead.
-    ///
-    /// This safe version does successfully defend against all
-    /// malicious and unsafe use, as far as I am aware.  If not,
-    /// please raise an issue.  The same unique ID will later be
-    /// allocated to someone else once you drop the returned owner,
-    /// but this cannot be abused to cause unsafe access to cells
-    /// because there will still be only one owner active at any one
-    /// time with that ID.  Also it cannot be used maliciously to
-    /// access cells which don't belong to the new caller, because you
-    /// also need a reference to the cells.  So for example if you
-    /// have a graph of cells that is only accessible through a
-    /// private structure, then someone else getting the same owner ID
-    /// makes no difference, because they have no way to get a
-    /// reference to those cells.  In any case, you are probably going
-    /// to drop all those cells at the same time as dropping the
-    /// owner, because they are no longer of any use without the owner
-    /// ID.
-    // #[inline]
+    /// instances.  It will have a unique ID associated with it to 
+    /// detect using the wrong owner to access a cell at runtime, 
+    /// which is a programming error.  This call will panic if the 
+    /// limit of 2^48 owners ever created in the same process.
+    #[inline]
+    #[allow(clippy::many_single_char_names)]
     pub fn new() -> Self {
         let mut id = NEXT_ID.load(Relaxed);
 
@@ -94,34 +65,9 @@ impl QCellOwner {
             }
         }
 
-        Self { id: Self::id_from_u64(id) }
-    }
+        let [a, b, c, d, e, f, _, _]: [u8; 8] = id.to_le_bytes();
 
-    /// Create an owner that can be used for creating many `QCell`
-    /// instances.  It will have a unique(-ish) ID associated with it
-    /// to detect using the wrong owner to access a cell at runtime,
-    /// which is a programming error.  This call is much faster than
-    /// [`new()`](#method.new) because it uses a simple atomic
-    /// increment to get a new ID, but it could be used maliciously to
-    /// obtain unsafe behaviour, so the call is marked as `unsafe`.
-    ///
-    /// If used non-maliciously the chance of getting unsafe behaviour
-    /// in practice is zero -- not just close to zero but actually
-    /// zero.  To get unsafe behaviour, you'd have to accidentally
-    /// create exactly 2^31 more owners to get a duplicate ID and
-    /// you'd also have to have a bug in your code where you try to
-    /// use the wrong owner to access a cell (which should normally be
-    /// rejected with a panic).  Already this is vanishingly
-    /// improbable, but then if that happened by accident on one run
-    /// but not on another, your code would still panic and you would
-    /// fix your bug.  So once that bug in your code is fixed, the
-    /// risk is zero.  No amount of fuzz-testing could ever cause
-    /// unsafe behaviour once that bug is fixed.  So whilst
-    /// strictly-speaking this call is unsafe, in practice there is no
-    /// risk unless you really try hard to exploit it.
-    #[inline]
-    pub unsafe fn fast_new() -> Self {
-        Self { id: Self::id_from_u64(NEXT_ID.fetch_add(1, Relaxed)) }
+        Self { id: [a, b, c, d, e, f] }
     }
 
     /// Get the internal owner ID.  This may be used to create `QCell`
@@ -245,26 +191,6 @@ mod tests {
         assert_eq!(id4, id1, "Expected ID 1 to be reused");
         assert_eq!(id5, id3, "Expected ID 3 to be reused");
         assert_ne!(id4, id5, "Expected ID 4/5 to be different");
-    }
-
-    #[test]
-    fn qcell_fast_ids() {
-        let _lock = LOCK.lock().unwrap();
-        let owner1 = QCellOwner::new();
-        let id1 = owner1.id;
-        let owner2 = unsafe { QCellOwner::fast_new() };
-        let id2 = owner2.id;
-        assert_ne!(id1, id2, "Expected ID 1/2 to be different");
-        let owner3 = unsafe { QCellOwner::fast_new() };
-        let id3 = owner3.id;
-        assert_ne!(id2, id3, "Expected ID 2/3 to be different");
-        drop(owner2);
-        drop(owner3);
-        let owner4 = QCellOwner::new();
-        let id4 = owner4.id;
-        assert_ne!(id1, id4, "Expected ID 1/4 to be different");
-        assert_ne!(id2, id4, "Expected ID 2/4 to be different");
-        assert_ne!(id3, id4, "Expected ID 3/4 to be different");
     }
 
     #[test]
