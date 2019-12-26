@@ -1,20 +1,21 @@
-use core::sync::atomic::{AtomicU32, Ordering::Relaxed};
+use core::sync::atomic::{AtomicU64, Ordering::Relaxed};
 use crate::{ValueCell, ValueCellOwner};
 
-static NEXT_ID: AtomicU32 = AtomicU32::new(0);
+static NEXT_ID: AtomicU64 = AtomicU64::new(0);
 
 pub type QCell<T> = ValueCell<QCellOwner, T>;
-type QCellId = u32;
+type QCellIDValue = [u8; 6];
+const MAX_ID_VALUE: u64 = 1 << (std::mem::size_of::<QCellIDValue>() * 8);
 
 /// Borrowing-owner of zero or more [`QCell`](struct.QCell.html)
 /// instances.
 ///
 /// See [crate documentation](index.html).
 pub struct QCellOwner {
-    id: QCellId,
+    id: QCellIDValue,
 }
 
-pub struct QCellOwnerID(QCellId);
+pub struct QCellOwnerID(QCellIDValue);
 
 impl<T> QCell<T> {
     #[inline]
@@ -41,6 +42,15 @@ impl Default for QCellOwner {
 }
 
 impl QCellOwner {
+    #[allow(clippy::many_single_char_names)]
+    #[inline(always)]
+    fn id_from_u64(id: u64) -> QCellIDValue {
+        // this should compile down to a no-op
+        let [a, b, c, d, e, f, _, _]: [u8; 8] = id.to_le_bytes();
+
+        [a, b, c, d, e, f]
+    }
+
     /// Create an owner that can be used for creating many `QCell`
     /// instances.  It will have a temporally unique ID associated
     /// with it to detect using the wrong owner to access a cell at
@@ -67,24 +77,24 @@ impl QCellOwner {
     /// to drop all those cells at the same time as dropping the
     /// owner, because they are no longer of any use without the owner
     /// ID.
-    #[inline]
+    // #[inline]
     pub fn new() -> Self {
         let mut id = NEXT_ID.load(Relaxed);
 
         loop {
-            let next_id = if let Some(next_id) = id.checked_add(1) {
-                next_id
-            } else {
-                panic!("Tried to create too many `QCellOwner`s");
-            };
+            core::sync::atomic::spin_loop_hint();
 
+            let next_id = id + 1;
+            
+            assert!(next_id < MAX_ID_VALUE, "Tried to create too many `QCellOwner`s");
+            
             match NEXT_ID.compare_exchange_weak(id, next_id, Relaxed, Relaxed) {
                 Ok(_) => break,
                 Err(next_id) => id = next_id
             }
         }
 
-        Self { id }
+        Self { id: Self::id_from_u64(id) }
     }
 
     /// Create an owner that can be used for creating many `QCell`
@@ -111,16 +121,7 @@ impl QCellOwner {
     /// risk unless you really try hard to exploit it.
     #[inline]
     pub unsafe fn fast_new() -> Self {
-        Self::from_id_unchecked(NEXT_ID.fetch_add(1, Relaxed))
-    }
-
-    #[inline]
-    pub const unsafe fn from_id_unchecked(id: QCellId) -> Self {
-        Self { id }
-    }
-
-    pub unsafe fn set_next_id(id: QCellId) {
-        NEXT_ID.store(id, Relaxed)
+        Self { id: Self::id_from_u64(NEXT_ID.fetch_add(1, Relaxed)) }
     }
 
     /// Get the internal owner ID.  This may be used to create `QCell`
@@ -186,7 +187,7 @@ impl QCellOwner {
 unsafe impl ValueCellOwner for QCellOwner {
     type Marker = QCellOwnerID;
 
-    #[inline]
+    // #[inline]
     fn validate_marker(&self, &QCellOwnerID(id): &Self::Marker) -> bool {
         self.id == id
     }
@@ -217,7 +218,7 @@ mod tests {
         (*owner.rw(&c2)) += 2;
         let c1ref = owner.ro(&c1);
         let c2ref = owner.ro(&c2);
-        let total = *c1ref + *c2ref;
+        let total   = *c1ref + *c2ref;
         assert_eq!(total, 303);
     }
 
