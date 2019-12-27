@@ -138,6 +138,17 @@ impl<Q, T> TLCell<Q, T> {
             value: UnsafeCell::new(value),
         }
     }
+
+    /// Get a pointer into the cell
+    /// 
+    /// # Safety
+    /// 
+    /// It is only safe to write to this pointer while the cell is
+    /// not being held by a `ro` or `rw` lock.
+    #[inline]
+    pub const fn as_ptr(&self) -> *mut T {
+        self.value.get()
+    }
 }
 
 // TLCell absolutely cannot be Sync, since otherwise you could send
