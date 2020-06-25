@@ -2,7 +2,7 @@ error[E0277]: `std::rc::Rc<()>` cannot be sent between threads safely
  --> $DIR/qcell-12.rs:8:5
   |
 7 |     fn is_send<T: Send>() {}
-  |        -------    ---- required by this bound in `main::is_send`
+  |                   ---- required by this bound in `main::is_send`
 8 |     is_send::<QCell<Rc<()>>>();  // Compile fail
   |     ^^^^^^^^^^^^^^^^^^^^^^^^ `std::rc::Rc<()>` cannot be sent between threads safely
   |

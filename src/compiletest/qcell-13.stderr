@@ -1,8 +1,18 @@
 error[E0277]: `std::rc::Rc<i32>` cannot be sent between threads safely
    --> $DIR/qcell-13.rs:11:5
     |
-11  |     std::thread::spawn(move || {    // Compile fail
-    |     ^^^^^^^^^^^^^^^^^^ `std::rc::Rc<i32>` cannot be sent between threads safely
+11  |       std::thread::spawn(move || {    // Compile fail
+    |  _____^^^^^^^^^^^^^^^^^^_-
+    | |     |
+    | |     `std::rc::Rc<i32>` cannot be sent between threads safely
+12  | |         assert_eq!(100, **owner.ro(&cell));
+13  | |     }).join();
+    | |_____- within this `[closure@$DIR/src/compiletest/qcell-13.rs:11:24: 13:6 owner:qcell::QCellOwner, cell:qcell::QCell<std::rc::Rc<i32>>]`
+    |
+   ::: $RUST/src/libstd/thread/mod.rs:616:8
+    |
+616 |       F: Send + 'static,
+    |          ---- required by this bound in `std::thread::spawn`
     |
     = help: within `[closure@$DIR/src/compiletest/qcell-13.rs:11:24: 13:6 owner:qcell::QCellOwner, cell:qcell::QCell<std::rc::Rc<i32>>]`, the trait `std::marker::Send` is not implemented for `std::rc::Rc<i32>`
     = note: required because it appears within the type `std::cell::UnsafeCell<std::rc::Rc<i32>>`

@@ -2,7 +2,7 @@ error[E0277]: `std::cell::Cell<i32>` cannot be shared between threads safely
  --> $DIR/qcell-09.rs:8:5
   |
 7 |     fn is_sync<T: Sync>() {}
-  |        -------    ---- required by this bound in `main::is_sync`
+  |                   ---- required by this bound in `main::is_sync`
 8 |     is_sync::<QCell<Cell<i32>>>();  // Compile fail
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ `std::cell::Cell<i32>` cannot be shared between threads safely
   |

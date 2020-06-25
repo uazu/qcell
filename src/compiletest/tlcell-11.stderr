@@ -2,7 +2,7 @@ error[E0277]: `*const main::Marker` cannot be shared between threads safely
  --> $DIR/tlcell-11.rs:8:5
   |
 7 |     fn is_sync<T: Sync>() {}
-  |        -------    ---- required by this bound in `main::is_sync`
+  |                   ---- required by this bound in `main::is_sync`
 8 |     is_sync::<TLCellOwner<Marker>>();  // Compile fail
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `*const main::Marker` cannot be shared between threads safely
   |

@@ -2,7 +2,7 @@ error[E0277]: `std::rc::Rc<()>` cannot be sent between threads safely
  --> $DIR/lcell-13.rs:9:5
   |
 8 |     fn is_sync<T: Sync>() {}
-  |        -------    ---- required by this bound in `main::is_sync`
+  |                   ---- required by this bound in `main::is_sync`
 9 |     is_sync::<LCell<'_, Rc<()>>>();  // Compile fail
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `std::rc::Rc<()>` cannot be sent between threads safely
   |
@@ -13,7 +13,7 @@ error[E0277]: `std::rc::Rc<()>` cannot be shared between threads safely
  --> $DIR/lcell-13.rs:9:5
   |
 8 |     fn is_sync<T: Sync>() {}
-  |        -------    ---- required by this bound in `main::is_sync`
+  |                   ---- required by this bound in `main::is_sync`
 9 |     is_sync::<LCell<'_, Rc<()>>>();  // Compile fail
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `std::rc::Rc<()>` cannot be shared between threads safely
   |

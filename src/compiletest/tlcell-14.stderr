@@ -2,7 +2,7 @@ error[E0277]: `std::rc::Rc<()>` cannot be sent between threads safely
  --> $DIR/tlcell-14.rs:9:5
   |
 8 |     fn is_send<T: Send>() {}
-  |        -------    ---- required by this bound in `main::is_send`
+  |                   ---- required by this bound in `main::is_send`
 9 |     is_send::<TLCell<Marker, Rc<()>>>();  // Compile fail
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `std::rc::Rc<()>` cannot be sent between threads safely
   |

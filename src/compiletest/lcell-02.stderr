@@ -27,6 +27,10 @@ note: ...but the lifetime must also be valid for the anonymous lifetime #2 defin
 13 | |         });
 14 | |     });
    | |_____^
-   = note: ...so that the types are compatible:
-           expected &qcell::LCellOwner<'_>
-              found &qcell::LCellOwner<'_>
+note: ...so that the types are compatible
+  --> $DIR/lcell-02.rs:11:33
+   |
+11 |             let c1ref2 = owner2.ro(&c1);   // Compile error
+   |                                 ^^
+   = note: expected  `&qcell::LCellOwner<'_>`
+              found  `&qcell::LCellOwner<'_>`

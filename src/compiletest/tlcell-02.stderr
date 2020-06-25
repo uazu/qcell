@@ -4,5 +4,5 @@ error[E0308]: mismatched types
 18 |     let c1ref = owner_b.ro(&*c1);   // Compile error
    |                            ^^^^ expected struct `main::MarkerB`, found struct `main::MarkerA`
    |
-   = note: expected type `&qcell::TLCell<main::MarkerB, _>`
-              found type `&qcell::TLCell<main::MarkerA, u32>`
+   = note: expected reference `&qcell::TLCell<main::MarkerB, _>`
+              found reference `&qcell::TLCell<main::MarkerA, u32>`

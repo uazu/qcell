@@ -1,12 +1,11 @@
+use once_cell::sync::Lazy;
 use std::any::TypeId;
 use std::cell::UnsafeCell;
 use std::collections::HashSet;
 use std::marker::PhantomData;
+use std::sync::Mutex;
 
-lazy_static! {
-    static ref SINGLETON_CHECK: std::sync::Mutex<HashSet<TypeId>> =
-        std::sync::Mutex::new(HashSet::new());
-}
+static SINGLETON_CHECK: Lazy<Mutex<HashSet<TypeId>>> = Lazy::new(|| Mutex::new(HashSet::new()));
 
 /// Borrowing-owner of zero or more [`TCell`](struct.TCell.html)
 /// instances.

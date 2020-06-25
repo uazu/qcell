@@ -313,9 +313,6 @@
 
 #![deny(rust_2018_idioms)]
 
-#[macro_use]
-extern crate lazy_static;
-
 mod lcell;
 mod qcell;
 mod tcell;
@@ -342,9 +339,18 @@ pub use crate::tlcell::TLCellOwner;
 // crate.  However since the compiler error messages may change from
 // one release to the next, the tests only remain valid for a certain
 // range of compiler versions.
+//
+// On upgrading the Rust version, with a clean git status, run
+// `TRYBUILD=overwrite cargo test` after updating the version number
+// below.  Then any error output that has changed will show up as
+// modified files under lib/compiletest.  Then check through those
+// manually to check that the failure is the same as before.  Mostly
+// the top line of the error message will be the same and there will
+// be changes in the formatting or hints provided by the compiler.  If
+// all is okay, check in the changes.
 #[cfg(test)]
 pub mod compiletest {
-    #[rustversion::all(stable, since(1.39), before(1.40))]
+    #[rustversion::all(stable, since(1.44), before(1.45))]
     #[test]
     fn ui() {
         let t = trybuild::TestCases::new();

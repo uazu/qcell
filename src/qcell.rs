@@ -1,3 +1,4 @@
+use once_cell::sync::Lazy;
 use std::cell::UnsafeCell;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
@@ -61,13 +62,12 @@ struct SafeQCellOwnerIDSource {
     free: Vec<OwnerID>, // Free list
     next: OwnerID,
 }
-lazy_static! {
-    static ref SAFE_QCELLOWNER_ID: Mutex<SafeQCellOwnerIDSource> =
-        Mutex::new(SafeQCellOwnerIDSource {
-            free: Vec::new(),
-            next: 0
-        });
-}
+static SAFE_QCELLOWNER_ID: Lazy<Mutex<SafeQCellOwnerIDSource>> = Lazy::new(|| {
+    Mutex::new(SafeQCellOwnerIDSource {
+        free: Vec::new(),
+        next: 0,
+    })
+});
 
 impl Drop for QCellOwner {
     fn drop(&mut self) {
@@ -130,10 +130,14 @@ impl QCellOwner {
     /// Create an owner that can be used for creating many `QCell`
     /// instances.  It will have a unique(-ish) ID associated with it
     /// to detect using the wrong owner to access a cell at runtime,
-    /// which is a programming error.  This call is much faster than
-    /// [`new()`](#method.new) because it uses a simple atomic
-    /// increment to get a new ID, but it could be used maliciously to
-    /// obtain unsafe behaviour, so the call is marked as `unsafe`.
+    /// which is a programming error.
+    ///
+    /// # Safety
+    ///
+    /// This call is much faster than [`new()`](#method.new) because
+    /// it uses a simple atomic increment to get a new ID, but it
+    /// could be used maliciously to obtain unsafe behaviour, so the
+    /// call is marked as `unsafe`.
     ///
     /// If used non-maliciously the chance of getting unsafe behaviour
     /// in practice is zero -- not just close to zero but actually
@@ -283,13 +287,15 @@ impl<T> QCell<T> {
 #[cfg(test)]
 mod tests {
     use super::{QCell, QCellOwner};
+    use once_cell::sync::Lazy;
     use std::sync::Mutex;
-    lazy_static! {
-        // Really we need the QCellOwner tests to always run with --test-threads=1 because
-        // they all access the same pool of IDs, but there's no way to specify that in
-        // Cargo.toml.  So use a lock instead.
-        static ref LOCK: Mutex<()> = Mutex::new(());
-    }
+
+    // Really we need the QCellOwner tests to always run with
+    // --test-threads=1 because they all access the same pool of IDs,
+    // but there's no way to specify that in Cargo.toml.  So use a
+    // lock instead.
+    static LOCK: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
+
     #[test]
     fn qcell() {
         let _lock = LOCK.lock().unwrap();

@@ -2,7 +2,7 @@ error[E0277]: `std::cell::Cell<i32>` cannot be shared between threads safely
  --> $DIR/tcell-11.rs:9:5
   |
 8 |     fn is_sync<T: Sync>() {}
-  |        -------    ---- required by this bound in `main::is_sync`
+  |                   ---- required by this bound in `main::is_sync`
 9 |     is_sync::<TCell<Marker, Cell<i32>>>();  // Compile fail
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `std::cell::Cell<i32>` cannot be shared between threads safely
   |

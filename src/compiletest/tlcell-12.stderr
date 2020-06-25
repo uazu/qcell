@@ -2,7 +2,7 @@ error[E0277]: `std::cell::UnsafeCell<()>` cannot be shared between threads safel
  --> $DIR/tlcell-12.rs:8:5
   |
 7 |     fn is_sync<T: Sync>() {}
-  |        -------    ---- required by this bound in `main::is_sync`
+  |                   ---- required by this bound in `main::is_sync`
 8 |     is_sync::<TLCell<Marker, ()>>(); // Compile fail
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `std::cell::UnsafeCell<()>` cannot be shared between threads safely
   |
@@ -13,7 +13,7 @@ error[E0277]: `*const main::Marker` cannot be shared between threads safely
  --> $DIR/tlcell-12.rs:8:5
   |
 7 |     fn is_sync<T: Sync>() {}
-  |        -------    ---- required by this bound in `main::is_sync`
+  |                   ---- required by this bound in `main::is_sync`
 8 |     is_sync::<TLCell<Marker, ()>>(); // Compile fail
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `*const main::Marker` cannot be shared between threads safely
   |
