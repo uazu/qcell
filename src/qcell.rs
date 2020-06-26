@@ -158,11 +158,6 @@ impl QCellOwner {
         }
     }
 
-    /// Check if `self` owns the given `QCell<T>`
-    pub const fn owns<T>(&self, cell: &QCell<T>) -> bool {
-        self.id == cell.owner
-    }
-
     /// Create a new cell owned by this owner instance.  See also
     /// [`QCell::new`].
     ///
@@ -283,17 +278,6 @@ impl<T> QCell<T> {
             owner: owner.id,
         }
     }
-
-    /// Get a pointer into the cell
-    /// 
-    /// # Safety
-    /// 
-    /// It is only safe to write to this pointer while the cell is
-    /// not being held by a `ro` or `rw` lock.
-    #[inline]
-    pub const fn as_ptr(&self) -> *mut T {
-        self.value.get()
-    }
 }
 
 #[cfg(test)]
@@ -306,21 +290,6 @@ mod tests {
         // Cargo.toml.  So use a lock instead.
         static ref LOCK: Mutex<()> = Mutex::new(());
     }
-
-    #[test]
-    fn qcell_owner() {
-        let _lock = LOCK.lock().unwrap();
-        let owner = QCellOwner::new();
-        let other = QCellOwner::new();
-        let c1 = QCell::new(&owner, 100u32);
-        let c2 = QCell::new(&other, 200u32);
-        
-        assert!(owner.owns(&c1));
-        assert!(!owner.owns(&c2));
-        assert!(!other.owns(&c1));
-        assert!(other.owns(&c2));
-    }
-
     #[test]
     fn qcell() {
         let _lock = LOCK.lock().unwrap();
