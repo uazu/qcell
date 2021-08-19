@@ -3,7 +3,7 @@ use std::any::TypeId;
 use std::cell::UnsafeCell;
 use std::collections::HashSet;
 use std::marker::PhantomData;
-use std::sync::{Mutex, Condvar};
+use std::sync::{Condvar, Mutex};
 
 static SINGLETON_CHECK: Lazy<Mutex<HashSet<TypeId>>> = Lazy::new(|| Mutex::new(HashSet::new()));
 static SINGLETON_CHECK_CONDVAR: Lazy<Condvar> = Lazy::new(|| Condvar::new());
@@ -41,9 +41,9 @@ impl<Q: 'static> TCellOwner<Q> {
     /// instance of this type per process at any given time for each
     /// different marker type `Q`.  This call panics if a second
     /// simultaneous instance is created.
-    /// 
+    ///
     /// Keep in mind that in Rust, tests are run in parallel unless
-    /// specified otherwise (using e.g. `RUST_TEST_THREADS`), so 
+    /// specified otherwise (using e.g. `RUST_TEST_THREADS`), so
     /// this panic may be more easy to trigger than you might think.
     /// To avoid this panic, consider using the methods
     /// [`TCellOwner::wait_for_new`] or [`TCellOwner::try_new`] instead.
@@ -77,10 +77,11 @@ impl<Q: 'static> TCellOwner<Q> {
         // If the HashSet already contains the TypeId of Q, there is
         // another TCellOwner. Block the thread until it gets dropped.
         // (the HashSet mutex is unlocked while waiting)
-        let mut hashset_guard = SINGLETON_CHECK_CONDVAR.wait_while(
-            hashset_guard,
-            |hashset| hashset.contains(&TypeId::of::<Q>())
-        ).unwrap();
+        let mut hashset_guard = SINGLETON_CHECK_CONDVAR
+            .wait_while(hashset_guard, |hashset| {
+                hashset.contains(&TypeId::of::<Q>())
+            })
+            .unwrap();
 
         // If we get here, no other TCellOwner of this type exists.
         // Return a new TCellOwner.  When dropped, it will remove the
@@ -102,7 +103,7 @@ impl<Q: 'static> TCellOwner<Q> {
     /// `TCell` instances can be borrowed immutably at the same time
     /// from the same owner.
     #[inline]
-    pub fn ro<'a, T>(&'a self, tc: &'a TCell<Q, T>) -> &'a T {
+    pub fn ro<'a, T: ?Sized>(&'a self, tc: &'a TCell<Q, T>) -> &'a T {
         unsafe { &*tc.value.get() }
     }
 
@@ -111,20 +112,20 @@ impl<Q: 'static> TCellOwner<Q> {
     /// call.  The returned reference must go out of scope before
     /// another can be borrowed.
     #[inline]
-    pub fn rw<'a, T>(&'a mut self, tc: &'a TCell<Q, T>) -> &'a mut T {
+    pub fn rw<'a, T: ?Sized>(&'a mut self, tc: &'a TCell<Q, T>) -> &'a mut T {
         unsafe { &mut *tc.value.get() }
     }
 
     /// Borrow contents of two `TCell` instances mutably.  Panics if
     /// the two `TCell` instances point to the same memory.
     #[inline]
-    pub fn rw2<'a, T, U>(
+    pub fn rw2<'a, T: ?Sized, U: ?Sized>(
         &'a mut self,
         tc1: &'a TCell<Q, T>,
         tc2: &'a TCell<Q, U>,
     ) -> (&'a mut T, &'a mut U) {
         assert!(
-            tc1 as *const _ as usize != tc2 as *const _ as usize,
+            tc1 as *const _ as *const () as usize != tc2 as *const _ as *const () as usize,
             "Illegal to borrow same TCell twice with rw2()"
         );
         unsafe { (&mut *tc1.value.get(), &mut *tc2.value.get()) }
@@ -133,16 +134,16 @@ impl<Q: 'static> TCellOwner<Q> {
     /// Borrow contents of three `TCell` instances mutably.  Panics if
     /// any pair of `TCell` instances point to the same memory.
     #[inline]
-    pub fn rw3<'a, T, U, V>(
+    pub fn rw3<'a, T: ?Sized, U: ?Sized, V: ?Sized>(
         &'a mut self,
         tc1: &'a TCell<Q, T>,
         tc2: &'a TCell<Q, U>,
         tc3: &'a TCell<Q, V>,
     ) -> (&'a mut T, &'a mut U, &'a mut V) {
         assert!(
-            (tc1 as *const _ as usize != tc2 as *const _ as usize)
-                && (tc2 as *const _ as usize != tc3 as *const _ as usize)
-                && (tc3 as *const _ as usize != tc1 as *const _ as usize),
+            (tc1 as *const _ as *const () as usize != tc2 as *const _ as *const () as usize)
+                && (tc2 as *const _ as *const () as usize != tc3 as *const _ as *const () as usize)
+                && (tc3 as *const _ as *const () as usize != tc1 as *const _ as *const () as usize),
             "Illegal to borrow same TCell twice with rw3()"
         );
         unsafe {
@@ -164,7 +165,7 @@ impl<Q: 'static> TCellOwner<Q> {
 /// See also [crate documentation](index.html).
 ///
 /// [`TCellOwner`]: struct.TCellOwner.html
-pub struct TCell<Q, T> {
+pub struct TCell<Q, T: ?Sized> {
     // Use *const to disable Send and Sync, which are then re-enabled
     // below under certain conditions
     owner: PhantomData<*const Q>,
@@ -183,10 +184,31 @@ impl<Q, T> TCell<Q, T> {
     }
 }
 
+impl<Q, T: ?Sized> TCell<Q, T> {
+    /// Borrow contents of this cell immutably (read-only).  Many
+    /// `TCell` instances can be borrowed immutably at the same time
+    /// from the same owner.
+    #[inline]
+    pub fn ro<'a>(&'a self, owner: &'a TCellOwner<Q>) -> &'a T {
+        owner.ro(self)
+    }
+
+    /// Borrow contents of this cell mutably (read-write).  Only one
+    /// `TCell` at a time can be borrowed from the owner using this
+    /// call.  The returned reference must go out of scope before
+    /// another can be borrowed.  To mutably borrow from two or three
+    /// cells at the same time, see [`TCellOwner::rw2`] or
+    /// [`TCellOwner::rw3`].
+    #[inline]
+    pub fn rw<'a>(&'a self, owner: &'a mut TCellOwner<Q>) -> &'a mut T {
+        owner.rw(self)
+    }
+}
+
 // It's fine to Send a TCell to a different thread if the containted
 // type is Send, because you can only send something if nothing
 // borrows it, so nothing can be accessing its contents.
-unsafe impl<Q, T: Send> Send for TCell<Q, T> {}
+unsafe impl<Q, T: Send + ?Sized> Send for TCell<Q, T> {}
 
 // We can add a Sync implementation, since it's fine to send a &TCell
 // to another thread, and even mutably borrow the value there, as long
@@ -203,7 +225,7 @@ unsafe impl<Q, T: Send> Send for TCell<Q, T> {}
 // as those of std::sync::RwLock<T>. That's not a coincidence.
 // The way these types let you access T concurrently is the same,
 // even though the locking mechanisms are different.
-unsafe impl<Q, T: Send + Sync> Sync for TCell<Q, T> {}
+unsafe impl<Q, T: Send + Sync + ?Sized> Sync for TCell<Q, T> {}
 
 #[cfg(test)]
 mod tests {
@@ -279,8 +301,8 @@ mod tests {
 
     #[test]
     fn tcell_wait_for_new_in_100_threads() {
-        use std::sync::Arc;
         use rand::Rng;
+        use std::sync::Arc;
         struct Marker;
         type ACellOwner = TCellOwner<Marker>;
         type ACell = TCell<Marker, i32>;
@@ -330,16 +352,76 @@ mod tests {
                 Ok(_) => panic!("ACellOwner::wait_for_new completed (but it shouldn't have)"),
                 Err(_) => {
                     // thread timed out as expected
-                },
+                }
             }
         }
 
         assert_time_out(std::time::Duration::from_millis(1000), || {
             struct Marker;
             type ACellOwner = TCellOwner<Marker>;
-            
+
             let _owner1 = ACellOwner::new();
             let _owner2 = ACellOwner::wait_for_new();
         });
+    }
+
+    #[test]
+    fn tcell_unsized() {
+        struct Marker;
+        type ACellOwner = TCellOwner<Marker>;
+        type ACell<T> = TCell<Marker, T>;
+        let mut owner = ACellOwner::new();
+        struct Squares(u32);
+        struct Integers(u64);
+        trait Series {
+            fn step(&mut self);
+            fn value(&self) -> u64;
+        }
+        impl Series for Squares {
+            fn step(&mut self) {
+                self.0 += 1;
+            }
+            fn value(&self) -> u64 {
+                (self.0 as u64) * (self.0 as u64)
+            }
+        }
+        impl Series for Integers {
+            fn step(&mut self) {
+                self.0 += 1;
+            }
+            fn value(&self) -> u64 {
+                self.0
+            }
+        }
+        fn series(init: u32, is_squares: bool) -> Box<ACell<dyn Series>> {
+            if is_squares {
+                Box::new(ACell::new(Squares(init)))
+            } else {
+                Box::new(ACell::new(Integers(init as u64)))
+            }
+        }
+
+        let own = &mut owner;
+        let cell1 = series(4, false);
+        let cell2 = series(7, true);
+        let cell3 = series(3, true);
+        assert_eq!(cell1.ro(own).value(), 4);
+        cell1.rw(own).step();
+        assert_eq!(cell1.ro(own).value(), 5);
+        assert_eq!(own.ro(&cell2).value(), 49);
+        own.rw(&cell2).step();
+        assert_eq!(own.ro(&cell2).value(), 64);
+        let (r1, r2, r3) = own.rw3(&cell1, &cell2, &cell3);
+        r1.step();
+        r2.step();
+        r3.step();
+        assert_eq!(cell1.ro(own).value(), 6);
+        assert_eq!(cell2.ro(own).value(), 81);
+        assert_eq!(cell3.ro(own).value(), 16);
+        let (r1, r2) = own.rw2(&cell1, &cell2);
+        r1.step();
+        r2.step();
+        assert_eq!(cell1.ro(own).value(), 7);
+        assert_eq!(cell2.ro(own).value(), 100);
     }
 }

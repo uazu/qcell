@@ -56,7 +56,7 @@ impl<Q: 'static> TLCellOwner<Q> {
     /// `TLCell` instances can be borrowed immutably at the same time
     /// from the same owner.
     #[inline]
-    pub fn ro<'a, T>(&'a self, tc: &'a TLCell<Q, T>) -> &'a T {
+    pub fn ro<'a, T: ?Sized>(&'a self, tc: &'a TLCell<Q, T>) -> &'a T {
         unsafe { &*tc.value.get() }
     }
 
@@ -65,20 +65,20 @@ impl<Q: 'static> TLCellOwner<Q> {
     /// call.  The returned reference must go out of scope before
     /// another can be borrowed.
     #[inline]
-    pub fn rw<'a, T>(&'a mut self, tc: &'a TLCell<Q, T>) -> &'a mut T {
+    pub fn rw<'a, T: ?Sized>(&'a mut self, tc: &'a TLCell<Q, T>) -> &'a mut T {
         unsafe { &mut *tc.value.get() }
     }
 
     /// Borrow contents of two `TLCell` instances mutably.  Panics if
     /// the two `TLCell` instances point to the same memory.
     #[inline]
-    pub fn rw2<'a, T, U>(
+    pub fn rw2<'a, T: ?Sized, U: ?Sized>(
         &'a mut self,
         tc1: &'a TLCell<Q, T>,
         tc2: &'a TLCell<Q, U>,
     ) -> (&'a mut T, &'a mut U) {
         assert!(
-            tc1 as *const _ as usize != tc2 as *const _ as usize,
+            tc1 as *const _ as *const () as usize != tc2 as *const _ as *const () as usize,
             "Illegal to borrow same TLCell twice with rw2()"
         );
         unsafe { (&mut *tc1.value.get(), &mut *tc2.value.get()) }
@@ -87,16 +87,16 @@ impl<Q: 'static> TLCellOwner<Q> {
     /// Borrow contents of three `TLCell` instances mutably.  Panics if
     /// any pair of `TLCell` instances point to the same memory.
     #[inline]
-    pub fn rw3<'a, T, U, V>(
+    pub fn rw3<'a, T: ?Sized, U: ?Sized, V: ?Sized>(
         &'a mut self,
         tc1: &'a TLCell<Q, T>,
         tc2: &'a TLCell<Q, U>,
         tc3: &'a TLCell<Q, V>,
     ) -> (&'a mut T, &'a mut U, &'a mut V) {
         assert!(
-            (tc1 as *const _ as usize != tc2 as *const _ as usize)
-                && (tc2 as *const _ as usize != tc3 as *const _ as usize)
-                && (tc3 as *const _ as usize != tc1 as *const _ as usize),
+            (tc1 as *const _ as *const () as usize != tc2 as *const _ as *const () as usize)
+                && (tc2 as *const _ as *const () as usize != tc3 as *const _ as *const () as usize)
+                && (tc3 as *const _ as *const () as usize != tc1 as *const _ as *const () as usize),
             "Illegal to borrow same TLCell twice with rw3()"
         );
         unsafe {
@@ -122,7 +122,7 @@ impl<Q: 'static> TLCellOwner<Q> {
 /// See also [crate documentation](index.html).
 ///
 /// [`TLCellOwner`]: struct.TLCellOwner.html
-pub struct TLCell<Q, T> {
+pub struct TLCell<Q, T: ?Sized> {
     // Use *const to disable Send and Sync
     owner: PhantomData<*const Q>,
     value: UnsafeCell<T>,
@@ -140,6 +140,27 @@ impl<Q, T> TLCell<Q, T> {
     }
 }
 
+impl<Q, T: ?Sized> TLCell<Q, T> {
+    /// Borrow contents of this cell immutably (read-only).  Many
+    /// `TLCell` instances can be borrowed immutably at the same time
+    /// from the same owner.
+    #[inline]
+    pub fn ro<'a>(&'a self, owner: &'a TLCellOwner<Q>) -> &'a T {
+        owner.ro(self)
+    }
+
+    /// Borrow contents of this cell mutably (read-write).  Only one
+    /// `TLCell` at a time can be borrowed from the owner using this
+    /// call.  The returned reference must go out of scope before
+    /// another can be borrowed.  To mutably borrow from two or three
+    /// cells at the same time, see [`TLCellOwner::rw2`] or
+    /// [`TLCellOwner::rw3`].
+    #[inline]
+    pub fn rw<'a>(&'a self, owner: &'a mut TLCellOwner<Q>) -> &'a mut T {
+        owner.rw(self)
+    }
+}
+
 // TLCell absolutely cannot be Sync, since otherwise you could send
 // two &TLCell's to two different threads, that each have their own
 // TLCellOwner<Q> instance and that could therefore both give out
@@ -151,7 +172,7 @@ impl<Q, T> TLCell<Q, T> {
 // TLCellOwner can no longer give access to the TLCell's contents since
 // TLCellOwner is !Send + !Sync. Only the TLCellOwner of the new thread
 // can give access to this TLCell's contents now.
-unsafe impl<Q, T: Send> Send for TLCell<Q, T> {}
+unsafe impl<Q, T: Send + ?Sized> Send for TLCell<Q, T> {}
 
 #[cfg(test)]
 mod tests {
@@ -207,5 +228,65 @@ mod tests {
         })
         .join()
         .unwrap();
+    }
+
+    #[test]
+    fn tlcell_unsized() {
+        struct Marker;
+        type ACellOwner = TLCellOwner<Marker>;
+        type ACell<T> = TLCell<Marker, T>;
+        let mut owner = ACellOwner::new();
+        struct Squares(u32);
+        struct Integers(u64);
+        trait Series {
+            fn step(&mut self);
+            fn value(&self) -> u64;
+        }
+        impl Series for Squares {
+            fn step(&mut self) {
+                self.0 += 1;
+            }
+            fn value(&self) -> u64 {
+                (self.0 as u64) * (self.0 as u64)
+            }
+        }
+        impl Series for Integers {
+            fn step(&mut self) {
+                self.0 += 1;
+            }
+            fn value(&self) -> u64 {
+                self.0
+            }
+        }
+        fn series(init: u32, is_squares: bool) -> Box<ACell<dyn Series>> {
+            if is_squares {
+                Box::new(ACell::new(Squares(init)))
+            } else {
+                Box::new(ACell::new(Integers(init as u64)))
+            }
+        }
+
+        let own = &mut owner;
+        let cell1 = series(4, false);
+        let cell2 = series(7, true);
+        let cell3 = series(3, true);
+        assert_eq!(cell1.ro(own).value(), 4);
+        cell1.rw(own).step();
+        assert_eq!(cell1.ro(own).value(), 5);
+        assert_eq!(own.ro(&cell2).value(), 49);
+        own.rw(&cell2).step();
+        assert_eq!(own.ro(&cell2).value(), 64);
+        let (r1, r2, r3) = own.rw3(&cell1, &cell2, &cell3);
+        r1.step();
+        r2.step();
+        r3.step();
+        assert_eq!(cell1.ro(own).value(), 6);
+        assert_eq!(cell2.ro(own).value(), 81);
+        assert_eq!(cell3.ro(own).value(), 16);
+        let (r1, r2) = own.rw2(&cell1, &cell2);
+        r1.step();
+        r2.step();
+        assert_eq!(cell1.ro(own).value(), 7);
+        assert_eq!(cell2.ro(own).value(), 100);
     }
 }

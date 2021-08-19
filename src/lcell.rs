@@ -67,7 +67,7 @@ impl<'id> LCellOwner<'id> {
     /// `LCell` instances can be borrowed immutably at the same time
     /// from the same owner.
     #[inline]
-    pub fn ro<'a, T>(&'a self, lc: &'a LCell<'id, T>) -> &'a T {
+    pub fn ro<'a, T: ?Sized>(&'a self, lc: &'a LCell<'id, T>) -> &'a T {
         unsafe { &*lc.value.get() }
     }
 
@@ -76,20 +76,20 @@ impl<'id> LCellOwner<'id> {
     /// call.  The returned reference must go out of scope before
     /// another can be borrowed.
     #[inline]
-    pub fn rw<'a, T>(&'a mut self, lc: &'a LCell<'id, T>) -> &'a mut T {
+    pub fn rw<'a, T: ?Sized>(&'a mut self, lc: &'a LCell<'id, T>) -> &'a mut T {
         unsafe { &mut *lc.value.get() }
     }
 
     /// Borrow contents of two `LCell` instances mutably.  Panics if
     /// the two `LCell` instances point to the same memory.
     #[inline]
-    pub fn rw2<'a, T, U>(
+    pub fn rw2<'a, T: ?Sized, U: ?Sized>(
         &'a mut self,
         lc1: &'a LCell<'id, T>,
         lc2: &'a LCell<'id, U>,
     ) -> (&'a mut T, &'a mut U) {
         assert!(
-            lc1 as *const _ as usize != lc2 as *const _ as usize,
+            lc1 as *const _ as *const () as usize != lc2 as *const _ as *const () as usize,
             "Illegal to borrow same LCell twice with rw2()"
         );
         unsafe { (&mut *lc1.value.get(), &mut *lc2.value.get()) }
@@ -98,16 +98,16 @@ impl<'id> LCellOwner<'id> {
     /// Borrow contents of three `LCell` instances mutably.  Panics if
     /// any pair of `LCell` instances point to the same memory.
     #[inline]
-    pub fn rw3<'a, T, U, V>(
+    pub fn rw3<'a, T: ?Sized, U: ?Sized, V: ?Sized>(
         &'a mut self,
         lc1: &'a LCell<'id, T>,
         lc2: &'a LCell<'id, U>,
         lc3: &'a LCell<'id, V>,
     ) -> (&'a mut T, &'a mut U, &'a mut V) {
         assert!(
-            (lc1 as *const _ as usize != lc2 as *const _ as usize)
-                && (lc2 as *const _ as usize != lc3 as *const _ as usize)
-                && (lc3 as *const _ as usize != lc1 as *const _ as usize),
+            (lc1 as *const _ as *const () as usize != lc2 as *const _ as *const () as usize)
+                && (lc2 as *const _ as *const () as usize != lc3 as *const _ as *const () as usize)
+                && (lc3 as *const _ as *const () as usize != lc1 as *const _ as *const () as usize),
             "Illegal to borrow same LCell twice with rw3()"
         );
         unsafe {
@@ -130,7 +130,7 @@ impl<'id> LCellOwner<'id> {
 /// See also [crate documentation](index.html).
 ///
 /// [`LCellOwner`]: struct.LCellOwner.html
-pub struct LCell<'id, T> {
+pub struct LCell<'id, T: ?Sized> {
     _id: Id<'id>,
     value: UnsafeCell<T>,
 }
@@ -145,6 +145,27 @@ impl<'id, T> LCell<'id, T> {
             _id: PhantomData,
             value: UnsafeCell::new(value),
         }
+    }
+}
+
+impl<'id, T: ?Sized> LCell<'id, T> {
+    /// Borrow contents of this cell immutably (read-only).  Many
+    /// `LCell` instances can be borrowed immutably at the same time
+    /// from the same owner.
+    #[inline]
+    pub fn ro<'a>(&'a self, owner: &'a LCellOwner<'id>) -> &'a T {
+        owner.ro(self)
+    }
+
+    /// Borrow contents of this cell mutably (read-write).  Only one
+    /// `LCell` at a time can be borrowed from the owner using this
+    /// call.  The returned reference must go out of scope before
+    /// another can be borrowed.  To mutably borrow from two or three
+    /// cells at the same time, see [`LCellOwner::rw2`] or
+    /// [`LCellOwner::rw3`].
+    #[inline]
+    pub fn rw<'a>(&'a self, owner: &'a mut LCellOwner<'id>) -> &'a mut T {
+        owner.rw(self)
     }
 }
 
@@ -165,7 +186,7 @@ impl<'id, T> LCell<'id, T> {
 // The way these types let you access T concurrently is the same,
 // even though the locking mechanisms are different.
 unsafe impl<'id> Sync for LCellOwner<'id> {}
-unsafe impl<'id, T: Send + Sync> Sync for LCell<'id, T> {}
+unsafe impl<'id, T: Send + Sync + ?Sized> Sync for LCell<'id, T> {}
 
 #[cfg(test)]
 mod tests {
@@ -233,6 +254,64 @@ mod tests {
             *mutref1 += 1;
             *mutref2 += 1;
             *mutref3 += 1;
+        });
+    }
+
+    #[test]
+    fn lcell_unsized() {
+        LCellOwner::scope(|mut owner| {
+            struct Squares(u32);
+            struct Integers(u64);
+            trait Series {
+                fn step(&mut self);
+                fn value(&self) -> u64;
+            }
+            impl Series for Squares {
+                fn step(&mut self) {
+                    self.0 += 1;
+                }
+                fn value(&self) -> u64 {
+                    (self.0 as u64) * (self.0 as u64)
+                }
+            }
+            impl Series for Integers {
+                fn step(&mut self) {
+                    self.0 += 1;
+                }
+                fn value(&self) -> u64 {
+                    self.0
+                }
+            }
+            fn series<'id>(init: u32, is_squares: bool) -> Box<LCell<'id, dyn Series>> {
+                if is_squares {
+                    Box::new(LCell::new(Squares(init)))
+                } else {
+                    Box::new(LCell::new(Integers(init as u64)))
+                }
+            }
+
+            let own = &mut owner;
+            let cell1 = series(4, false);
+            let cell2 = series(7, true);
+            let cell3 = series(3, true);
+            assert_eq!(cell1.ro(own).value(), 4);
+            cell1.rw(own).step();
+            assert_eq!(cell1.ro(own).value(), 5);
+            assert_eq!(own.ro(&cell2).value(), 49);
+            own.rw(&cell2).step();
+            assert_eq!(own.ro(&cell2).value(), 64);
+            let (r1, r2, r3) = own.rw3(&cell1, &cell2, &cell3);
+            r1.step();
+            r2.step();
+            r3.step();
+            assert_eq!(cell1.ro(own).value(), 6);
+            assert_eq!(cell2.ro(own).value(), 81);
+            assert_eq!(cell3.ro(own).value(), 16);
+            let (r1, r2) = own.rw2(&cell1, &cell2);
+            r1.step();
+            r2.step();
+            assert_eq!(cell1.ro(own).value(), 7);
+            assert_eq!(cell2.ro(own).value(), 100);
         });
     }
 }

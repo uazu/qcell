@@ -181,7 +181,7 @@ impl QCellOwner {
     /// `QCell` instances can be borrowed immutably at the same time
     /// from the same owner.  Panics if the `QCell` is not owned by
     /// this `QCellOwner`.
-    pub fn ro<'a, T>(&'a self, qc: &'a QCell<T>) -> &'a T {
+    pub fn ro<'a, T: ?Sized>(&'a self, qc: &'a QCell<T>) -> &'a T {
         assert_eq!(qc.owner, self.id, "QCell accessed with incorrect owner");
         unsafe { &*qc.value.get() }
     }
@@ -191,7 +191,7 @@ impl QCellOwner {
     /// call.  The returned reference must go out of scope before
     /// another can be borrowed.  Panics if the `QCell` is not owned
     /// by this `QCellOwner`.
-    pub fn rw<'a, T>(&'a mut self, qc: &'a QCell<T>) -> &'a mut T {
+    pub fn rw<'a, T: ?Sized>(&'a mut self, qc: &'a QCell<T>) -> &'a mut T {
         assert_eq!(qc.owner, self.id, "QCell accessed with incorrect owner");
         unsafe { &mut *qc.value.get() }
     }
@@ -199,7 +199,7 @@ impl QCellOwner {
     /// Borrow contents of two `QCell` instances mutably.  Panics if
     /// the two `QCell` instances point to the same memory.  Panics if
     /// either `QCell` is not owned by this `QCellOwner`.
-    pub fn rw2<'a, T, U>(
+    pub fn rw2<'a, T: ?Sized, U: ?Sized>(
         &'a mut self,
         qc1: &'a QCell<T>,
         qc2: &'a QCell<U>,
@@ -207,7 +207,7 @@ impl QCellOwner {
         assert_eq!(qc1.owner, self.id, "QCell accessed with incorrect owner");
         assert_eq!(qc2.owner, self.id, "QCell accessed with incorrect owner");
         assert_ne!(
-            qc1 as *const _ as usize, qc2 as *const _ as usize,
+            qc1 as *const _ as *const () as usize, qc2 as *const _ as *const () as usize,
             "Illegal to borrow same QCell twice with rw2()"
         );
         unsafe { (&mut *qc1.value.get(), &mut *qc2.value.get()) }
@@ -216,7 +216,7 @@ impl QCellOwner {
     /// Borrow contents of three `QCell` instances mutably.  Panics if
     /// any pair of `QCell` instances point to the same memory.
     /// Panics if any `QCell` is not owned by this `QCellOwner`.
-    pub fn rw3<'a, T, U, V>(
+    pub fn rw3<'a, T: ?Sized, U: ?Sized, V: ?Sized>(
         &'a mut self,
         qc1: &'a QCell<T>,
         qc2: &'a QCell<U>,
@@ -226,9 +226,9 @@ impl QCellOwner {
         assert_eq!(qc2.owner, self.id, "QCell accessed with incorrect owner");
         assert_eq!(qc3.owner, self.id, "QCell accessed with incorrect owner");
         assert!(
-            (qc1 as *const _ as usize != qc2 as *const _ as usize)
-                && (qc2 as *const _ as usize != qc3 as *const _ as usize)
-                && (qc3 as *const _ as usize != qc1 as *const _ as usize),
+            (qc1 as *const _ as *const () as usize != qc2 as *const _ as *const () as usize)
+                && (qc2 as *const _ as *const () as usize != qc3 as *const _ as *const () as usize)
+                && (qc3 as *const _ as *const () as usize != qc1 as *const _ as *const () as usize),
             "Illegal to borrow same QCell twice with rw3()"
         );
         unsafe {
@@ -249,7 +249,7 @@ impl QCellOwner {
 /// documentation](index.html).
 ///
 /// [`QCellOwner`]: struct.QCellOwner.html
-pub struct QCell<T> {
+pub struct QCell<T: ?Sized> {
     owner: OwnerID,
     value: UnsafeCell<T>,
 }
@@ -270,7 +270,7 @@ pub struct QCell<T> {
 // as those of std::sync::RwLock<T>. That's not a coincidence.
 // The way these types let you access T concurrently is the same,
 // even though the locking mechanisms are different.
-unsafe impl<T: Send + Sync> Sync for QCell<T> {}
+unsafe impl<T: Send + Sync + ?Sized> Sync for QCell<T> {}
 
 impl<T> QCell<T> {
     /// Create a new `QCell` owned for borrowing purposes by the given
@@ -281,6 +281,27 @@ impl<T> QCell<T> {
             value: UnsafeCell::new(value),
             owner: owner.id,
         }
+    }
+}
+
+impl<T: ?Sized> QCell<T> {
+    /// Borrow contents of this cell immutably (read-only).  Many
+    /// `QCell` instances can be borrowed immutably at the same time
+    /// from the same owner.
+    #[inline]
+    pub fn ro<'a>(&'a self, owner: &'a QCellOwner) -> &'a T {
+        owner.ro(self)
+    }
+
+    /// Borrow contents of this cell mutably (read-write).  Only one
+    /// `QCell` at a time can be borrowed from the owner using this
+    /// call.  The returned reference must go out of scope before
+    /// another can be borrowed.  To mutably borrow from two or three
+    /// cells at the same time, see [`QCellOwner::rw2`] or
+    /// [`QCellOwner::rw3`].
+    #[inline]
+    pub fn rw<'a>(&'a self, owner: &'a mut QCellOwner) -> &'a mut T {
+        owner.rw(self)
     }
 }
 
@@ -369,5 +390,63 @@ mod tests {
             15,
             owner1.ro(&c11) + owner2.ro(&c12) + owner1.ro(&c21) + owner2.ro(&c22)
         );
+    }
+
+    #[test]
+    fn qcell_unsized() {
+        let _lock = LOCK.lock().unwrap();
+        let mut owner = QCellOwner::new();
+        struct Squares(u32);
+        struct Integers(u64);
+        trait Series {
+            fn step(&mut self);
+            fn value(&self) -> u64;
+        }
+        impl Series for Squares {
+            fn step(&mut self) {
+                self.0 += 1;
+            }
+            fn value(&self) -> u64 {
+                (self.0 as u64) * (self.0 as u64)
+            }
+        }
+        impl Series for Integers {
+            fn step(&mut self) {
+                self.0 += 1;
+            }
+            fn value(&self) -> u64 {
+                self.0
+            }
+        }
+        fn series(init: u32, is_squares: bool, owner: &QCellOwner) -> Box<QCell<dyn Series>> {
+            if is_squares {
+                Box::new(QCell::new(owner, Squares(init)))
+            } else {
+                Box::new(QCell::new(owner, Integers(init as u64)))
+            }
+        }
+
+        let own = &mut owner;
+        let cell1 = series(4, false, own);
+        let cell2 = series(7, true, own);
+        let cell3 = series(3, true, own);
+        assert_eq!(cell1.ro(own).value(), 4);
+        cell1.rw(own).step();
+        assert_eq!(cell1.ro(own).value(), 5);
+        assert_eq!(own.ro(&cell2).value(), 49);
+        own.rw(&cell2).step();
+        assert_eq!(own.ro(&cell2).value(), 64);
+        let (r1, r2, r3) = own.rw3(&cell1, &cell2, &cell3);
+        r1.step();
+        r2.step();
+        r3.step();
+        assert_eq!(cell1.ro(own).value(), 6);
+        assert_eq!(cell2.ro(own).value(), 81);
+        assert_eq!(cell3.ro(own).value(), 16);
+        let (r1, r2) = own.rw2(&cell1, &cell2);
+        r1.step();
+        r2.step();
+        assert_eq!(cell1.ro(own).value(), 7);
+        assert_eq!(cell2.ro(own).value(), 100);
     }
 }
