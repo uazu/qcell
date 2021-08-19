@@ -14,6 +14,43 @@
 //! let mut owner1 = ACellOwner::new();
 //! let mut owner2 = ACellOwner::new();  // Panics here
 //! ```
+//! 
+//! You can test if another owner exists using `TCellOwner::try_new()`:
+//! 
+//! ```
+//!# use qcell::{TCell, TCellOwner};
+//!# use std::rc::Rc;
+//! struct Marker;
+//! type ACellOwner = TCellOwner<Marker>;
+//! let mut owner1 = ACellOwner::try_new();
+//! assert!(owner1.is_some());
+//! let mut owner2 = ACellOwner::try_new();
+//! assert!(owner2.is_none());
+//! ```
+//!
+//! When you try to create a second owner using
+//! `TCellOwner::wait_for_new`, it will block until the first owner is
+//! dropped:
+//!
+//! ```
+//!# use qcell::{TCell, TCellOwner};
+//!# use std::sync::Arc;
+//! struct Marker;
+//! type ACell<T> = TCell<Marker, T>;
+//! type ACellOwner = TCellOwner<Marker>;
+//! let mut owner1 = ACellOwner::wait_for_new();
+//! let cell_arc1 = Arc::new(ACell::new(123));
+//! let cell_arc2 = cell_arc1.clone();
+//! let thread = std::thread::spawn(move || {
+//!     // blocks until owner1 is dropped
+//!     let mut owner2 = ACellOwner::wait_for_new();
+//!     assert_eq!(*owner2.ro(&*cell_arc2), 456);
+//! });
+//! std::thread::sleep(std::time::Duration::from_millis(100));
+//! *owner1.rw(&*cell_arc1) = 456;
+//! drop(owner1);
+//! assert!(thread.join().is_ok());
+//! ```
 //!
 //! It should be impossible to copy a `TCellOwner`:
 //!
