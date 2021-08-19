@@ -3,9 +3,10 @@ use std::any::TypeId;
 use std::cell::UnsafeCell;
 use std::collections::HashSet;
 use std::marker::PhantomData;
-use std::sync::Mutex;
+use std::sync::{Mutex, Condvar};
 
 static SINGLETON_CHECK: Lazy<Mutex<HashSet<TypeId>>> = Lazy::new(|| Mutex::new(HashSet::new()));
+static SINGLETON_CHECK_CONDVAR: Lazy<Condvar> = Lazy::new(|| Condvar::new());
 
 /// Borrowing-owner of zero or more [`TCell`](struct.TCell.html)
 /// instances.
@@ -18,7 +19,13 @@ pub struct TCellOwner<Q: 'static> {
 
 impl<Q: 'static> Drop for TCellOwner<Q> {
     fn drop(&mut self) {
+        // Remove the TypeId of Q from the HashSet, indicating that
+        // no more instances of TCellOwner<Q> exist.
         SINGLETON_CHECK.lock().unwrap().remove(&TypeId::of::<Q>());
+
+        // Wake up all threads waiting in TCellOwner::wait_for_new()
+        // to check if their Q was removed from the HashSet.
+        SINGLETON_CHECK_CONDVAR.notify_all();
     }
 }
 
@@ -34,11 +41,52 @@ impl<Q: 'static> TCellOwner<Q> {
     /// instance of this type per process at any given time for each
     /// different marker type `Q`.  This call panics if a second
     /// simultaneous instance is created.
+    /// 
+    /// Keep in mind that in Rust, tests are run in parallel unless
+    /// specified otherwise (using e.g. `RUST_TEST_THREADS`), so 
+    /// this panic may be more easy to trigger than you might think.
+    /// To avoid this panic, consider using the methods
+    /// [`TCellOwner::wait_for_new`] or [`TCellOwner::try_new`] instead.
     pub fn new() -> Self {
-        assert!(
-            SINGLETON_CHECK.lock().unwrap().insert(TypeId::of::<Q>()),
-            "Illegal to create two TCellOwner instances with the same marker type parameter"
-        );
+        if let Some(owner) = TCellOwner::try_new() {
+            owner
+        } else {
+            panic!("Illegal to create two TCellOwner instances with the same marker type parameter")
+        }
+    }
+
+    /// Same as [`TCellOwner::new`], except if another `TCellOwner`
+    /// of this type `Q` already exists, this returns `None` instead
+    /// of panicking.
+    pub fn try_new() -> Option<Self> {
+        if SINGLETON_CHECK.lock().unwrap().insert(TypeId::of::<Q>()) {
+            Some(Self { typ: PhantomData })
+        } else {
+            None
+        }
+    }
+
+    /// Same as [`TCellOwner::new`], except if another `TCellOwner`
+    /// of this type `Q` already exists, this function blocks the thread
+    /// until that other instance is dropped.  This will of course deadlock
+    /// if that other instance is owned by the same thread.
+    pub fn wait_for_new() -> Self {
+        // Lock the HashSet mutex.
+        let hashset_guard = SINGLETON_CHECK.lock().unwrap();
+
+        // If the HashSet already contains the TypeId of Q, there is
+        // another TCellOwner. Block the thread until it gets dropped.
+        // (the HashSet mutex is unlocked while waiting)
+        let mut hashset_guard = SINGLETON_CHECK_CONDVAR.wait_while(
+            hashset_guard,
+            |hashset| hashset.contains(&TypeId::of::<Q>())
+        ).unwrap();
+
+        // If we get here, no other TCellOwner of this type exists.
+        // Return a new TCellOwner.  When dropped, it will remove the
+        // TypeId of Q from the HashSet, and notify all waiting threads.
+        let inserted = hashset_guard.insert(TypeId::of::<Q>());
+        assert!(inserted);
         Self { typ: PhantomData }
     }
 
@@ -185,6 +233,15 @@ mod tests {
     }
 
     #[test]
+    fn tcell_singleton_try_new() {
+        struct Marker;
+        let owner1 = TCellOwner::<Marker>::try_new();
+        assert!(owner1.is_some());
+        let owner2 = TCellOwner::<Marker>::try_new();
+        assert!(owner2.is_none());
+    }
+
+    #[test]
     fn tcell() {
         struct Marker;
         type ACellOwner = TCellOwner<Marker>;
@@ -218,5 +275,71 @@ mod tests {
         rx.recv().unwrap();
         let mut _owner = ACellOwner::new(); // Panics here
         let _ = rx.recv();
+    }
+
+    #[test]
+    fn tcell_wait_for_new_in_100_threads() {
+        use std::sync::Arc;
+        use rand::Rng;
+        struct Marker;
+        type ACellOwner = TCellOwner<Marker>;
+        type ACell = TCell<Marker, i32>;
+        let cell_arc = Arc::new(ACell::new(0));
+        let mut handles = vec![];
+        for _ in 0..100 {
+            let cell_arc_clone = cell_arc.clone();
+            let handle = std::thread::spawn(move || {
+                // wait a bit
+                let mut rng = rand::thread_rng();
+                std::thread::sleep(std::time::Duration::from_millis(rng.gen_range(0..10)));
+                // create a new owner
+                let mut owner = ACellOwner::wait_for_new();
+                // read the cell's current value
+                let current_cell_val = *owner.ro(&*cell_arc_clone);
+                // wait a bit more
+                std::thread::sleep(std::time::Duration::from_millis(rng.gen_range(0..10)));
+                // write the old cell value + 1 to the cell
+                // (no other thread should have been able to modify the cell in the
+                // meantime because we still hold on to the owner)
+                *owner.rw(&*cell_arc_clone) = current_cell_val + 1;
+            });
+            handles.push(handle);
+        }
+        for handle in handles {
+            assert!(handle.join().is_ok());
+        }
+        let owner = ACellOwner::wait_for_new();
+        assert_eq!(*owner.ro(&*cell_arc), 100);
+    }
+
+    #[test]
+    fn tcell_wait_for_new_timeout() {
+        fn assert_time_out<F>(d: std::time::Duration, f: F)
+        where
+            F: FnOnce(),
+            F: Send + 'static,
+        {
+            let (done_tx, done_rx) = std::sync::mpsc::channel();
+            let _handle = std::thread::spawn(move || {
+                let val = f();
+                done_tx.send(()).unwrap();
+                val
+            });
+
+            match done_rx.recv_timeout(d) {
+                Ok(_) => panic!("ACellOwner::wait_for_new completed (but it shouldn't have)"),
+                Err(_) => {
+                    // thread timed out as expected
+                },
+            }
+        }
+
+        assert_time_out(std::time::Duration::from_millis(1000), || {
+            struct Marker;
+            type ACellOwner = TCellOwner<Marker>;
+            
+            let _owner1 = ACellOwner::new();
+            let _owner2 = ACellOwner::wait_for_new();
+        });
     }
 }
