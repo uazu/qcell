@@ -1,10 +1,10 @@
-error[E0277]: `std::cell::Cell<i32>` cannot be shared between threads safely
+error[E0277]: `Cell<i32>` cannot be shared between threads safely
  --> $DIR/qcell-09.rs:8:5
   |
 7 |     fn is_sync<T: Sync>() {}
-  |                   ---- required by this bound in `main::is_sync`
+  |                   ---- required by this bound in `is_sync`
 8 |     is_sync::<QCell<Cell<i32>>>();  // Compile fail
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ `std::cell::Cell<i32>` cannot be shared between threads safely
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ `Cell<i32>` cannot be shared between threads safely
   |
-  = help: the trait `std::marker::Sync` is not implemented for `std::cell::Cell<i32>`
-  = note: required because of the requirements on the impl of `std::marker::Sync` for `qcell::QCell<std::cell::Cell<i32>>`
+  = help: the trait `Sync` is not implemented for `Cell<i32>`
+  = note: required because of the requirements on the impl of `Sync` for `QCell<Cell<i32>>`

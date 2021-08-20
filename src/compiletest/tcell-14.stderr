@@ -1,10 +1,10 @@
-error[E0277]: `std::rc::Rc<()>` cannot be sent between threads safely
+error[E0277]: `Rc<()>` cannot be sent between threads safely
  --> $DIR/tcell-14.rs:9:5
   |
 8 |     fn is_send<T: Send>() {}
-  |                   ---- required by this bound in `main::is_send`
+  |                   ---- required by this bound in `is_send`
 9 |     is_send::<TCell<Marker, Rc<()>>>();  // Compile fail
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `std::rc::Rc<()>` cannot be sent between threads safely
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `Rc<()>` cannot be sent between threads safely
   |
-  = help: the trait `std::marker::Send` is not implemented for `std::rc::Rc<()>`
-  = note: required because of the requirements on the impl of `std::marker::Send` for `qcell::TCell<main::Marker, std::rc::Rc<()>>`
+  = help: the trait `Send` is not implemented for `Rc<()>`
+  = note: required because of the requirements on the impl of `Send` for `TCell<Marker, Rc<()>>`

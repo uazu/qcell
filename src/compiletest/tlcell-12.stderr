@@ -1,22 +1,22 @@
-error[E0277]: `std::cell::UnsafeCell<()>` cannot be shared between threads safely
+error[E0277]: `UnsafeCell<()>` cannot be shared between threads safely
  --> $DIR/tlcell-12.rs:8:5
   |
 7 |     fn is_sync<T: Sync>() {}
-  |                   ---- required by this bound in `main::is_sync`
+  |                   ---- required by this bound in `is_sync`
 8 |     is_sync::<TLCell<Marker, ()>>(); // Compile fail
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `std::cell::UnsafeCell<()>` cannot be shared between threads safely
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `UnsafeCell<()>` cannot be shared between threads safely
   |
-  = help: within `qcell::TLCell<main::Marker, ()>`, the trait `std::marker::Sync` is not implemented for `std::cell::UnsafeCell<()>`
-  = note: required because it appears within the type `qcell::TLCell<main::Marker, ()>`
+  = help: within `TLCell<Marker, ()>`, the trait `Sync` is not implemented for `UnsafeCell<()>`
+  = note: required because it appears within the type `TLCell<Marker, ()>`
 
-error[E0277]: `*const main::Marker` cannot be shared between threads safely
+error[E0277]: `*const Marker` cannot be shared between threads safely
  --> $DIR/tlcell-12.rs:8:5
   |
 7 |     fn is_sync<T: Sync>() {}
-  |                   ---- required by this bound in `main::is_sync`
+  |                   ---- required by this bound in `is_sync`
 8 |     is_sync::<TLCell<Marker, ()>>(); // Compile fail
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `*const main::Marker` cannot be shared between threads safely
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `*const Marker` cannot be shared between threads safely
   |
-  = help: within `qcell::TLCell<main::Marker, ()>`, the trait `std::marker::Sync` is not implemented for `*const main::Marker`
-  = note: required because it appears within the type `std::marker::PhantomData<*const main::Marker>`
-  = note: required because it appears within the type `qcell::TLCell<main::Marker, ()>`
+  = help: within `TLCell<Marker, ()>`, the trait `Sync` is not implemented for `*const Marker`
+  = note: required because it appears within the type `PhantomData<*const Marker>`
+  = note: required because it appears within the type `TLCell<Marker, ()>`

@@ -1,13 +1,5 @@
-error[E0599]: no method named `clone` found for struct `qcell::TCellOwner<main::Marker>` in the current scope
-   --> $DIR/tcell-01.rs:10:25
-    |
-10  |     let owner2 = owner1.clone();  // Compile fail
-    |                         ^^^^^ method not found in `qcell::TCellOwner<main::Marker>`
-    |
-   ::: $RUST/src/libcore/clone.rs:122:8
-    |
-122 |     fn clone(&self) -> Self;
-    |        -----
-    |        |
-    |        the method is available for `std::sync::Arc<qcell::TCellOwner<main::Marker>>` here
-    |        the method is available for `std::rc::Rc<qcell::TCellOwner<main::Marker>>` here
+error[E0599]: no method named `clone` found for struct `TCellOwner` in the current scope
+  --> $DIR/tcell-01.rs:10:25
+   |
+10 |     let owner2 = owner1.clone();  // Compile fail
+   |                         ^^^^^ method not found in `TCellOwner<Marker>`

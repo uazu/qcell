@@ -2,7 +2,7 @@ error[E0382]: borrow of moved value: `owner1`
   --> $DIR/tlcell-00.rs:12:22
    |
 10 |     let mut owner1 = ACellOwner::new();
-   |         ---------- move occurs because `owner1` has type `qcell::TLCellOwner<main::Marker>`, which does not implement the `Copy` trait
+   |         ---------- move occurs because `owner1` has type `TLCellOwner<Marker>`, which does not implement the `Copy` trait
 11 |     let mut owner2 = owner1;
    |                      ------ value moved here
 12 |     let rc = Rc::new(owner1.cell(100u32));  // Compile fail

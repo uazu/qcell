@@ -1,20 +1,20 @@
-error[E0277]: `*const main::Marker` cannot be sent between threads safely
+error[E0277]: `*const Marker` cannot be sent between threads safely
    --> $DIR/tlcell-13.rs:12:5
     |
 12  |       std::thread::spawn(move || {
     |  _____^^^^^^^^^^^^^^^^^^_-
     | |     |
-    | |     `*const main::Marker` cannot be sent between threads safely
+    | |     `*const Marker` cannot be sent between threads safely
 13  | |         assert_eq!(*owner.ro(&cell), 100);
 14  | |     }).join();
-    | |_____- within this `[closure@$DIR/src/compiletest/tlcell-13.rs:12:24: 14:6 owner:qcell::TLCellOwner<main::Marker>, cell:qcell::TLCell<main::Marker, i32>]`
+    | |_____- within this `[closure@$DIR/src/compiletest/tlcell-13.rs:12:24: 14:6]`
     |
-   ::: $RUST/src/libstd/thread/mod.rs:616:8
+   ::: $RUST/std/src/thread/mod.rs
     |
-616 |       F: Send + 'static,
-    |          ---- required by this bound in `std::thread::spawn`
+    |       F: Send + 'static,
+    |          ---- required by this bound in `spawn`
     |
-    = help: within `[closure@$DIR/src/compiletest/tlcell-13.rs:12:24: 14:6 owner:qcell::TLCellOwner<main::Marker>, cell:qcell::TLCell<main::Marker, i32>]`, the trait `std::marker::Send` is not implemented for `*const main::Marker`
-    = note: required because it appears within the type `std::marker::PhantomData<*const main::Marker>`
-    = note: required because it appears within the type `qcell::TLCellOwner<main::Marker>`
-    = note: required because it appears within the type `[closure@$DIR/src/compiletest/tlcell-13.rs:12:24: 14:6 owner:qcell::TLCellOwner<main::Marker>, cell:qcell::TLCell<main::Marker, i32>]`
+    = help: within `[closure@$DIR/src/compiletest/tlcell-13.rs:12:24: 14:6]`, the trait `Send` is not implemented for `*const Marker`
+    = note: required because it appears within the type `PhantomData<*const Marker>`
+    = note: required because it appears within the type `TLCellOwner<Marker>`
+    = note: required because it appears within the type `[closure@$DIR/src/compiletest/tlcell-13.rs:12:24: 14:6]`

@@ -1,21 +1,21 @@
-error[E0277]: `std::rc::Rc<()>` cannot be sent between threads safely
+error[E0277]: `Rc<()>` cannot be sent between threads safely
  --> $DIR/lcell-13.rs:9:5
   |
 8 |     fn is_sync<T: Sync>() {}
-  |                   ---- required by this bound in `main::is_sync`
+  |                   ---- required by this bound in `is_sync`
 9 |     is_sync::<LCell<'_, Rc<()>>>();  // Compile fail
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `std::rc::Rc<()>` cannot be sent between threads safely
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `Rc<()>` cannot be sent between threads safely
   |
-  = help: the trait `std::marker::Send` is not implemented for `std::rc::Rc<()>`
-  = note: required because of the requirements on the impl of `std::marker::Sync` for `qcell::LCell<'_, std::rc::Rc<()>>`
+  = help: the trait `Send` is not implemented for `Rc<()>`
+  = note: required because of the requirements on the impl of `Sync` for `LCell<'_, Rc<()>>`
 
-error[E0277]: `std::rc::Rc<()>` cannot be shared between threads safely
+error[E0277]: `Rc<()>` cannot be shared between threads safely
  --> $DIR/lcell-13.rs:9:5
   |
 8 |     fn is_sync<T: Sync>() {}
-  |                   ---- required by this bound in `main::is_sync`
+  |                   ---- required by this bound in `is_sync`
 9 |     is_sync::<LCell<'_, Rc<()>>>();  // Compile fail
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `std::rc::Rc<()>` cannot be shared between threads safely
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `Rc<()>` cannot be shared between threads safely
   |
-  = help: the trait `std::marker::Sync` is not implemented for `std::rc::Rc<()>`
-  = note: required because of the requirements on the impl of `std::marker::Sync` for `qcell::LCell<'_, std::rc::Rc<()>>`
+  = help: the trait `Sync` is not implemented for `Rc<()>`
+  = note: required because of the requirements on the impl of `Sync` for `LCell<'_, Rc<()>>`

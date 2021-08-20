@@ -4,7 +4,7 @@ error[E0495]: cannot infer an appropriate lifetime for lifetime parameter `'id` 
 10 |             let c1ref1 = owner1.ro(&c1);
    |                                 ^^
    |
-note: first, the lifetime cannot outlive the anonymous lifetime #2 defined on the body at 8:27...
+note: first, the lifetime cannot outlive the anonymous lifetime #1 defined on the body at 8:27...
   --> $DIR/lcell-02.rs:8:27
    |
 8  |           LCellOwner::scope(|mut owner2| {
@@ -15,7 +15,7 @@ note: first, the lifetime cannot outlive the anonymous lifetime #2 defined on th
 12 | |             println!("{}", *c1ref2);
 13 | |         });
    | |_________^
-note: ...but the lifetime must also be valid for the anonymous lifetime #2 defined on the body at 7:23...
+note: ...but the lifetime must also be valid for the anonymous lifetime #1 defined on the body at 7:23...
   --> $DIR/lcell-02.rs:7:23
    |
 7  |       LCellOwner::scope(|mut owner1| {
@@ -32,5 +32,5 @@ note: ...so that the types are compatible
    |
 11 |             let c1ref2 = owner2.ro(&c1);   // Compile error
    |                                 ^^
-   = note: expected  `&qcell::LCellOwner<'_>`
-              found  `&qcell::LCellOwner<'_>`
+   = note: expected `&LCellOwner<'_>`
+              found `&LCellOwner<'_>`
