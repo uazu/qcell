@@ -1,6 +1,6 @@
 [package]
 name = "qcell"
-version = "0.4.1"
+version = "0.4.2"
 authors = ["Jim Peters <jim@uazu.net>"]
 edition = "2018"
 

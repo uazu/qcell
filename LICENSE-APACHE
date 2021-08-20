@@ -186,8 +186,8 @@
       same "printed page" as the copyright notice for easier
       identification within third-party archives.
 
-   Copyright (c) 2019 Jim Peters
-   Copyright (c) 2019 `qcell` crate contributors
+   Copyright (c) 2019-2021 Jim Peters
+   Copyright (c) 2019-2021 `qcell` crate contributors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.

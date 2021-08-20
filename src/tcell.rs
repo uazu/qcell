@@ -6,7 +6,7 @@ use std::marker::PhantomData;
 use std::sync::{Condvar, Mutex};
 
 static SINGLETON_CHECK: Lazy<Mutex<HashSet<TypeId>>> = Lazy::new(|| Mutex::new(HashSet::new()));
-static SINGLETON_CHECK_CONDVAR: Lazy<Condvar> = Lazy::new(|| Condvar::new());
+static SINGLETON_CHECK_CONDVAR: Lazy<Condvar> = Lazy::new(Condvar::new);
 
 /// Borrowing-owner of zero or more [`TCell`](struct.TCell.html)
 /// instances.
@@ -70,6 +70,14 @@ impl<Q: 'static> TCellOwner<Q> {
     /// of this type `Q` already exists, this function blocks the thread
     /// until that other instance is dropped.  This will of course deadlock
     /// if that other instance is owned by the same thread.
+    ///
+    /// Note that owners are expected to be relatively long-lived.  If
+    /// you need to access cells associated with a given marker type
+    /// from several different threads, the most efficient pattern is
+    /// to have a single long-lived owner shared between threads, with
+    /// a `Mutex` or `RwLock` to control access.  This call is
+    /// intended to help when several independent tests need to run
+    /// which use the same marker type internally.
     pub fn wait_for_new() -> Self {
         // Lock the HashSet mutex.
         let hashset_guard = SINGLETON_CHECK.lock().unwrap();
