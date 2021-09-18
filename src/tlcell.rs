@@ -3,6 +3,10 @@ use std::cell::UnsafeCell;
 use std::collections::HashSet;
 use std::marker::PhantomData;
 
+// needs an abstraction as a struct, otherwise we'll get spurious error
+// regarding "function pointers cannot appear in constant functions"
+struct Invariant<Q>(fn(Q) -> Q);
+
 std::thread_local! {
     static SINGLETON_CHECK: std::cell::RefCell<HashSet<TypeId>> = std::cell::RefCell::new(HashSet::new());
 }
@@ -12,8 +16,10 @@ std::thread_local! {
 ///
 /// See [crate documentation](index.html).
 pub struct TLCellOwner<Q: 'static> {
-    // Use *const to disable Send and Sync
-    typ: PhantomData<*const Q>,
+    // Use *const () to disable Send and Sync,
+    // use Invariant<Q> for invariant parameter, not influencing
+    // other auto-traits like UnwindSafe
+    typ: PhantomData<(*const (), Invariant<Q>)>,
 }
 
 impl<Q: 'static> Drop for TLCellOwner<Q> {
@@ -123,8 +129,10 @@ impl<Q: 'static> TLCellOwner<Q> {
 ///
 /// [`TLCellOwner`]: struct.TLCellOwner.html
 pub struct TLCell<Q, T: ?Sized> {
-    // Use *const to disable Send and Sync
-    owner: PhantomData<*const Q>,
+    // Use *const () to disable Send and Sync,
+    // use Invariant<Q> for invariant parameter, not influencing
+    // other auto-traits like UnwindSafe
+    owner: PhantomData<(*const (), Invariant<Q>)>,
     value: UnsafeCell<T>,
 }
 

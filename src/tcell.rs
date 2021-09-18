@@ -5,6 +5,10 @@ use std::collections::HashSet;
 use std::marker::PhantomData;
 use std::sync::{Condvar, Mutex};
 
+// needs an abstraction as a struct, otherwise we'll get spurious error
+// regarding "function pointers cannot appear in constant functions"
+struct Invariant<Q>(fn(Q) -> Q);
+
 static SINGLETON_CHECK: Lazy<Mutex<HashSet<TypeId>>> = Lazy::new(|| Mutex::new(HashSet::new()));
 static SINGLETON_CHECK_CONDVAR: Lazy<Condvar> = Lazy::new(Condvar::new);
 
@@ -13,8 +17,8 @@ static SINGLETON_CHECK_CONDVAR: Lazy<Condvar> = Lazy::new(Condvar::new);
 ///
 /// See [crate documentation](index.html).
 pub struct TCellOwner<Q: 'static> {
-    // Allow Send and Sync
-    typ: PhantomData<Q>,
+    // Allow Send and Sync, and Q is invariant
+    typ: PhantomData<Invariant<Q>>,
 }
 
 impl<Q: 'static> Drop for TCellOwner<Q> {
@@ -174,9 +178,11 @@ impl<Q: 'static> TCellOwner<Q> {
 ///
 /// [`TCellOwner`]: struct.TCellOwner.html
 pub struct TCell<Q, T: ?Sized> {
-    // Use *const to disable Send and Sync, which are then re-enabled
-    // below under certain conditions
-    owner: PhantomData<*const Q>,
+    // Use *const () to disable Send and Sync, which are then re-enabled
+    // below under certain conditions,
+    // use Invariant<Q> for invariant parameter, not influencing
+    // other auto-traits like UnwindSafe
+    owner: PhantomData<(*const (), Invariant<Q>)>,
     value: UnsafeCell<T>,
 }
 
