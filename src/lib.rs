@@ -355,7 +355,7 @@ pub use crate::tlcell::TLCellOwner;
 // all is okay, check in the changes.
 #[cfg(test)]
 pub mod compiletest {
-    #[rustversion::all(stable, since(1.54), before(1.55))]
+    #[rustversion::all(stable, since(1.55), before(1.56))]
     #[test]
     fn ui() {
         let t = trybuild::TestCases::new();
