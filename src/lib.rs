@@ -116,10 +116,10 @@
 //!# use qcell::{LCell, LCellOwner};
 //!# use std::rc::Rc;
 //! LCellOwner::scope(|mut owner| {
-//!   let item = Rc::new(LCell::new(Vec::<u8>::new()));
-//!   let iref = owner.rw(&item);
-//!   iref.push(1);
-//!   test(&mut owner, &item);
+//!     let item = Rc::new(LCell::new(Vec::<u8>::new()));
+//!     let iref = owner.rw(&item);
+//!     iref.push(1);
+//!     test(&mut owner, &item);
 //! });
 //!
 //! fn test<'id>(owner: &mut LCellOwner<'id>, item: &Rc<LCell<'id, Vec<u8>>>) {
