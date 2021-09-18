@@ -1,4 +1,4 @@
-use std::cell::{Cell, UnsafeCell};
+use std::cell::UnsafeCell;
 use std::marker::PhantomData;
 
 use super::Invariant;
