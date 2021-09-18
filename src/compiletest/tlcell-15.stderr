@@ -13,13 +13,13 @@ error[E0277]: `Rc<i32>` cannot be sent between threads safely
     = note: required because of the requirements on the impl of `Send` for `TLCell<Marker, Rc<i32>>`
     = note: required because it appears within the type `[closure@$DIR/src/compiletest/tlcell-15.rs:15:24: 17:6]`
 
-error[E0277]: `*const Marker` cannot be sent between threads safely
+error[E0277]: `*const ()` cannot be sent between threads safely
    --> $DIR/tlcell-15.rs:15:5
     |
 15  |       std::thread::spawn(move || {    // Compile fail
     |  _____^^^^^^^^^^^^^^^^^^_-
     | |     |
-    | |     `*const Marker` cannot be sent between threads safely
+    | |     `*const ()` cannot be sent between threads safely
 16  | |         assert_eq!(100, **owner.ro(&cell));
 17  | |     }).join();
     | |_____- within this `[closure@$DIR/src/compiletest/tlcell-15.rs:15:24: 17:6]`
@@ -29,7 +29,8 @@ error[E0277]: `*const Marker` cannot be sent between threads safely
     |       F: Send + 'static,
     |          ---- required by this bound in `spawn`
     |
-    = help: within `[closure@$DIR/src/compiletest/tlcell-15.rs:15:24: 17:6]`, the trait `Send` is not implemented for `*const Marker`
-    = note: required because it appears within the type `PhantomData<*const Marker>`
+    = help: within `[closure@$DIR/src/compiletest/tlcell-15.rs:15:24: 17:6]`, the trait `Send` is not implemented for `*const ()`
+    = note: required because it appears within the type `(*const (), qcell::Invariant<Marker>)`
+    = note: required because it appears within the type `PhantomData<(*const (), qcell::Invariant<Marker>)>`
     = note: required because it appears within the type `TLCellOwner<Marker>`
     = note: required because it appears within the type `[closure@$DIR/src/compiletest/tlcell-15.rs:15:24: 17:6]`
