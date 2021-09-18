@@ -1,7 +1,8 @@
 use std::cell::{Cell, UnsafeCell};
 use std::marker::PhantomData;
+struct Invariant<Q>(fn(Q) -> Q);
 
-type Id<'id> = PhantomData<Cell<&'id mut ()>>;
+type Id<'id> = PhantomData<Invariant<&'id ()>>;
 
 /// Borrowing-owner of zero or more [`LCell`](struct.LCell.html)
 /// instances.
@@ -169,7 +170,7 @@ impl<'id, T: ?Sized> LCell<'id, T> {
     }
 }
 
-// LCellOwner and LCell already automatically implement Send, but not
+// LCell already automatically implements Send, but not
 // Sync. We can add these implementations though, since it's fine to
 // send a &LCell to another thread, and even mutably borrow the value
 // there, as long as T is Send and Sync.
@@ -185,7 +186,6 @@ impl<'id, T: ?Sized> LCell<'id, T> {
 // as those of std::sync::RwLock<T>. That's not a coincidence.
 // The way these types let you access T concurrently is the same,
 // even though the locking mechanisms are different.
-unsafe impl<'id> Sync for LCellOwner<'id> {}
 unsafe impl<'id, T: Send + Sync + ?Sized> Sync for LCell<'id, T> {}
 
 #[cfg(test)]
