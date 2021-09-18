@@ -5,9 +5,7 @@ use std::collections::HashSet;
 use std::marker::PhantomData;
 use std::sync::{Condvar, Mutex};
 
-// needs an abstraction as a struct, otherwise we'll get spurious error
-// regarding "function pointers cannot appear in constant functions"
-struct Invariant<Q>(fn(Q) -> Q);
+use super::Invariant;
 
 static SINGLETON_CHECK: Lazy<Mutex<HashSet<TypeId>>> = Lazy::new(|| Mutex::new(HashSet::new()));
 static SINGLETON_CHECK_CONDVAR: Lazy<Condvar> = Lazy::new(Condvar::new);

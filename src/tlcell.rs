@@ -3,9 +3,7 @@ use std::cell::UnsafeCell;
 use std::collections::HashSet;
 use std::marker::PhantomData;
 
-// needs an abstraction as a struct, otherwise we'll get spurious error
-// regarding "function pointers cannot appear in constant functions"
-struct Invariant<Q>(fn(Q) -> Q);
+use super::Invariant;
 
 std::thread_local! {
     static SINGLETON_CHECK: std::cell::RefCell<HashSet<TypeId>> = std::cell::RefCell::new(HashSet::new());

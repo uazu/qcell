@@ -1,7 +1,7 @@
 use std::cell::{Cell, UnsafeCell};
 use std::marker::PhantomData;
-struct Invariant<Q>(fn(Q) -> Q);
 
+use super::Invariant;
 type Id<'id> = PhantomData<Invariant<&'id ()>>;
 
 /// Borrowing-owner of zero or more [`LCell`](struct.LCell.html)

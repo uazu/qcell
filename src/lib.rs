@@ -323,6 +323,11 @@ pub mod doctest_qcell;
 pub mod doctest_tcell;
 pub mod doctest_tlcell;
 
+// Used in lcell, tcell, tlcell.
+// Needs an abstraction as a struct, since otherwise we'll get errors
+// regarding "function pointers cannot appear in constant functions"
+struct Invariant<T>(fn(T) -> T);
+
 pub use crate::lcell::LCell;
 pub use crate::lcell::LCellOwner;
 pub use crate::qcell::QCell;
