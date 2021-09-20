@@ -179,7 +179,11 @@ pub struct TCell<Q, T: ?Sized> {
     // use Invariant<Q> for invariant parameter, not influencing
     // other auto-traits, e.g. UnwindSafe (unlike other solutions like `*mut Q` or `Cell<Q>`)
     owner: PhantomData<Invariant<Q>>,
-    // Also disables `Sync`, gives the right `Send` implementation.
+    // It's fine to Send a TCell to a different thread if the containted
+    // type is Send, because you can only send something if nothing
+    // borrows it, so nothing can be accessing its contents.
+    //
+    // `UnsafeCell` disables `Sync` and already gives the right `Send` implementation.
     // `Sync` is re-enabled below under certain conditions.
     value: UnsafeCell<T>,
 }
