@@ -116,10 +116,10 @@
 //!# use qcell::{LCell, LCellOwner};
 //!# use std::rc::Rc;
 //! LCellOwner::scope(|mut owner| {
-//!   let item = Rc::new(LCell::new(Vec::<u8>::new()));
-//!   let iref = owner.rw(&item);
-//!   iref.push(1);
-//!   test(&mut owner, &item);
+//!     let item = Rc::new(LCell::new(Vec::<u8>::new()));
+//!     let iref = owner.rw(&item);
+//!     iref.push(1);
+//!     test(&mut owner, &item);
 //! });
 //!
 //! fn test<'id>(owner: &mut LCellOwner<'id>, item: &Rc<LCell<'id, Vec<u8>>>) {
@@ -323,6 +323,11 @@ pub mod doctest_qcell;
 pub mod doctest_tcell;
 pub mod doctest_tlcell;
 
+// Used in lcell, tcell, tlcell.
+// Needs an abstraction as a struct, since otherwise we'll get errors
+// regarding "function pointers cannot appear in constant functions"
+struct Invariant<T>(fn(T) -> T);
+
 pub use crate::lcell::LCell;
 pub use crate::lcell::LCellOwner;
 pub use crate::qcell::QCell;
@@ -350,7 +355,7 @@ pub use crate::tlcell::TLCellOwner;
 // all is okay, check in the changes.
 #[cfg(test)]
 pub mod compiletest {
-    #[rustversion::all(stable, since(1.54), before(1.55))]
+    #[rustversion::all(stable, since(1.55), before(1.56))]
     #[test]
     fn ui() {
         let t = trybuild::TestCases::new();

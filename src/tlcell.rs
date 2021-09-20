@@ -3,17 +3,24 @@ use std::cell::UnsafeCell;
 use std::collections::HashSet;
 use std::marker::PhantomData;
 
+use super::Invariant;
+
 std::thread_local! {
     static SINGLETON_CHECK: std::cell::RefCell<HashSet<TypeId>> = std::cell::RefCell::new(HashSet::new());
 }
+
+struct NotSendOrSync(*const ());
 
 /// Borrowing-owner of zero or more [`TLCell`](struct.TLCell.html)
 /// instances.
 ///
 /// See [crate documentation](index.html).
 pub struct TLCellOwner<Q: 'static> {
-    // Use *const to disable Send and Sync
-    typ: PhantomData<*const Q>,
+    // Use NotSendOrSync to disable Send and Sync,
+    not_send_or_sync: PhantomData<NotSendOrSync>,
+    // use Invariant<Q> for invariant parameter, not influencing
+    // other auto-traits, e.g. UnwindSafe (unlike other solutions like `*mut Q` or `Cell<Q>`)
+    typ: PhantomData<Invariant<Q>>,
 }
 
 impl<Q: 'static> Drop for TLCellOwner<Q> {
@@ -41,7 +48,10 @@ impl<Q: 'static> TLCellOwner<Q> {
             assert!(set.borrow_mut().insert(TypeId::of::<Q>()),
                     "Illegal to create two TLCellOwner instances within the same thread with the same marker type parameter");
         });
-        Self { typ: PhantomData }
+        Self {
+            not_send_or_sync: PhantomData,
+            typ: PhantomData,
+        }
     }
 
     /// Create a new cell owned by this owner instance.  See also
@@ -123,8 +133,22 @@ impl<Q: 'static> TLCellOwner<Q> {
 ///
 /// [`TLCellOwner`]: struct.TLCellOwner.html
 pub struct TLCell<Q, T: ?Sized> {
-    // Use *const to disable Send and Sync
-    owner: PhantomData<*const Q>,
+    // use Invariant<Q> for invariant parameter, not influencing
+    // other auto-traits, e.g. UnwindSafe (unlike other solutions like `*mut Q` or `Cell<Q>`)
+    owner: PhantomData<Invariant<Q>>,
+    // TLCell absolutely cannot be Sync, since otherwise you could send
+    // two &TLCell's to two different threads, that each have their own
+    // TLCellOwner<Q> instance and that could therefore both give out
+    // a &mut T to the same T.
+    //
+    // However, it's fine to Send a TLCell to a different thread, because
+    // you can only send something if nothing borrows it, so nothing can
+    // be accessing its contents. After sending the TLCell, the original
+    // TLCellOwner can no longer give access to the TLCell's contents since
+    // TLCellOwner is !Send + !Sync. Only the TLCellOwner of the new thread
+    // can give access to this TLCell's contents now.
+    //
+    // `UnsafeCell` already disables `Sync` and gives the right `Send` implementation.
     value: UnsafeCell<T>,
 }
 
@@ -160,19 +184,6 @@ impl<Q, T: ?Sized> TLCell<Q, T> {
         owner.rw(self)
     }
 }
-
-// TLCell absolutely cannot be Sync, since otherwise you could send
-// two &TLCell's to two different threads, that each have their own
-// TLCellOwner<Q> instance and that could therefore both give out
-// a &mut T to the same T.
-//
-// However, it's fine to Send a TLCell to a different thread, because
-// you can only send something if nothing borrows it, so nothing can
-// be accessing its contents. After sending the TLCell, the original
-// TLCellOwner can no longer give access to the TLCell's contents since
-// TLCellOwner is !Send + !Sync. Only the TLCellOwner of the new thread
-// can give access to this TLCell's contents now.
-unsafe impl<Q, T: Send + ?Sized> Send for TLCell<Q, T> {}
 
 #[cfg(test)]
 mod tests {

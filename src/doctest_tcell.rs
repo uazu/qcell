@@ -14,9 +14,9 @@
 //! let mut owner1 = ACellOwner::new();
 //! let mut owner2 = ACellOwner::new();  // Panics here
 //! ```
-//! 
+//!
 //! You can test if another owner exists using `TCellOwner::try_new()`:
-//! 
+//!
 //! ```
 //!# use qcell::{TCell, TCellOwner};
 //!# use std::rc::Rc;

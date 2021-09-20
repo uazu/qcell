@@ -1,11 +1,12 @@
-error[E0277]: `*const Marker` cannot be shared between threads safely
+error[E0277]: `*const ()` cannot be shared between threads safely
  --> $DIR/tlcell-11.rs:8:5
   |
 7 |     fn is_sync<T: Sync>() {}
   |                   ---- required by this bound in `is_sync`
 8 |     is_sync::<TLCellOwner<Marker>>();  // Compile fail
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `*const Marker` cannot be shared between threads safely
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `*const ()` cannot be shared between threads safely
   |
-  = help: within `TLCellOwner<Marker>`, the trait `Sync` is not implemented for `*const Marker`
-  = note: required because it appears within the type `PhantomData<*const Marker>`
+  = help: within `TLCellOwner<Marker>`, the trait `Sync` is not implemented for `*const ()`
+  = note: required because it appears within the type `qcell::tlcell::NotSendOrSync`
+  = note: required because it appears within the type `PhantomData<qcell::tlcell::NotSendOrSync>`
   = note: required because it appears within the type `TLCellOwner<Marker>`

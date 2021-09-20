@@ -5,6 +5,8 @@ use std::collections::HashSet;
 use std::marker::PhantomData;
 use std::sync::{Condvar, Mutex};
 
+use super::Invariant;
+
 static SINGLETON_CHECK: Lazy<Mutex<HashSet<TypeId>>> = Lazy::new(|| Mutex::new(HashSet::new()));
 static SINGLETON_CHECK_CONDVAR: Lazy<Condvar> = Lazy::new(Condvar::new);
 
@@ -13,8 +15,8 @@ static SINGLETON_CHECK_CONDVAR: Lazy<Condvar> = Lazy::new(Condvar::new);
 ///
 /// See [crate documentation](index.html).
 pub struct TCellOwner<Q: 'static> {
-    // Allow Send and Sync
-    typ: PhantomData<Q>,
+    // Allow Send and Sync, and Q is invariant
+    typ: PhantomData<Invariant<Q>>,
 }
 
 impl<Q: 'static> Drop for TCellOwner<Q> {
@@ -174,9 +176,15 @@ impl<Q: 'static> TCellOwner<Q> {
 ///
 /// [`TCellOwner`]: struct.TCellOwner.html
 pub struct TCell<Q, T: ?Sized> {
-    // Use *const to disable Send and Sync, which are then re-enabled
-    // below under certain conditions
-    owner: PhantomData<*const Q>,
+    // use Invariant<Q> for invariant parameter, not influencing
+    // other auto-traits, e.g. UnwindSafe (unlike other solutions like `*mut Q` or `Cell<Q>`)
+    owner: PhantomData<Invariant<Q>>,
+    // It's fine to Send a TCell to a different thread if the containted
+    // type is Send, because you can only send something if nothing
+    // borrows it, so nothing can be accessing its contents.
+    //
+    // `UnsafeCell` disables `Sync` and already gives the right `Send` implementation.
+    // `Sync` is re-enabled below under certain conditions.
     value: UnsafeCell<T>,
 }
 
@@ -212,11 +220,6 @@ impl<Q, T: ?Sized> TCell<Q, T> {
         owner.rw(self)
     }
 }
-
-// It's fine to Send a TCell to a different thread if the containted
-// type is Send, because you can only send something if nothing
-// borrows it, so nothing can be accessing its contents.
-unsafe impl<Q, T: Send + ?Sized> Send for TCell<Q, T> {}
 
 // We can add a Sync implementation, since it's fine to send a &TCell
 // to another thread, and even mutably borrow the value there, as long
