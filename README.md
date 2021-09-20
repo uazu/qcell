@@ -1,7 +1,8 @@
-# Statically-checked alternatives to RefCell
+# Statically-checked alternatives to RefCell or RwLock
 
-Alternatives to `RefCell` that instead of panicking at runtime will
-give compilation errors instead.
+Cell types that instead of panicking at runtime as with `RefCell` will
+give compilation errors instead, or that exchange fine-grained locking
+with `RwLock` for coarser-grained locking of a separate owner object.
 
 ### Documentation
 

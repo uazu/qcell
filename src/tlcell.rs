@@ -18,8 +18,7 @@ struct NotSendOrSync(*const ());
 pub struct TLCellOwner<Q: 'static> {
     // Use NotSendOrSync to disable Send and Sync,
     not_send_or_sync: PhantomData<NotSendOrSync>,
-    // use Invariant<Q> for invariant parameter, not influencing
-    // other auto-traits, e.g. UnwindSafe (unlike other solutions like `*mut Q` or `Cell<Q>`)
+    // Use Invariant<Q> for invariant parameter
     typ: PhantomData<Invariant<Q>>,
 }
 
@@ -133,9 +132,9 @@ impl<Q: 'static> TLCellOwner<Q> {
 ///
 /// [`TLCellOwner`]: struct.TLCellOwner.html
 pub struct TLCell<Q, T: ?Sized> {
-    // use Invariant<Q> for invariant parameter, not influencing
-    // other auto-traits, e.g. UnwindSafe (unlike other solutions like `*mut Q` or `Cell<Q>`)
+    // Use Invariant<Q> for invariant parameter
     owner: PhantomData<Invariant<Q>>,
+
     // TLCell absolutely cannot be Sync, since otherwise you could send
     // two &TLCell's to two different threads, that each have their own
     // TLCellOwner<Q> instance and that could therefore both give out

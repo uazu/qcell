@@ -176,10 +176,10 @@ impl<Q: 'static> TCellOwner<Q> {
 ///
 /// [`TCellOwner`]: struct.TCellOwner.html
 pub struct TCell<Q, T: ?Sized> {
-    // use Invariant<Q> for invariant parameter, not influencing
-    // other auto-traits, e.g. UnwindSafe (unlike other solutions like `*mut Q` or `Cell<Q>`)
+    // Use Invariant<Q> for invariant parameter
     owner: PhantomData<Invariant<Q>>,
-    // It's fine to Send a TCell to a different thread if the containted
+
+    // It's fine to Send a TCell to a different thread if the contained
     // type is Send, because you can only send something if nothing
     // borrows it, so nothing can be accessing its contents.
     //

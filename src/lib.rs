@@ -1,4 +1,4 @@
-//! Statically-checked alternatives to [`RefCell`].
+//! Statically-checked alternatives to [`RefCell`] and [`RwLock`].
 //!
 //! This crate provides four alternatives to [`RefCell`], each of
 //! which checks borrows from the cell at compile-time (statically)
@@ -249,13 +249,16 @@
 //! `TLCell` |  | Send
 //! `LCell` | Send + Sync | Send + Sync
 //!
-//! I believe that the reasoning behind enabling Send and/or Sync is
-//! sound, but I welcome review of this in case anything has been
-//! overlooked.  I am grateful for contributions from Github users
-//! [**Migi**] and [**pythonesque**].  `GhostCell` by
-//! [**pythonesque**] is a lifetime-based cell that predated `LCell`.
-//! It appears that he has proved some properties of `GhostCell` using
-//! Coq, and I hope that that research becomes public in due course.
+//! I am grateful for contributions from Github users [**Migi**] and
+//! [**pythonesque**] to justify the reasoning behind enabling Send
+//! and/or Sync.  (`GhostCell` by [**pythonesque**] is a
+//! lifetime-based cell that predated `LCell`, but which was only
+//! [officially published in
+//! 2021](http://plv.mpi-sws.org/rustbelt/ghostcell/).  The authors of
+//! that paper proved that the logical reasoning behind `GhostCell` is
+//! correct, which indirectly strengthens the theoretical
+//! justification for other similar cell types, such as the ones in
+//! this crate.)
 //!
 //! Here's an overview of the reasoning:
 //!
@@ -284,6 +287,21 @@
 //! that case the right to access the data is being transferred
 //! completely from one thread to another.
 //!
+//! # Multi-threaded use: RwLock
+//!
+//! `QCell` and similar types can also be used as a replacement for
+//! `RwLock`.  For example if you have a collection of
+//! `Arc<RwLock<T>>`, you can replace them with `Arc<QCell<T>>`.
+//! Essentially you're exchanging the fine-grained locking (one for
+//! every single `T`) for a coarse-grained lock around the
+//! `QCellOwner`.  Depending on the access patterns, this might work
+//! out better or worse.  For example if you often need to access
+//! several `T` instances in one logical operation, and there is low
+//! contention on the big lock, then it will work out better.  Or if
+//! you already have `&mut` on the `struct` containing the
+//! `QCellOwner`, then you get access to the `T` instances essentially
+//! for free.
+//!
 //! # Origin of names
 //!
 //! "Q" originally referred to quantum entanglement, the idea being
@@ -296,6 +314,7 @@
 //! and [`doctest_lcell`] modules
 //!
 //! [`RefCell`]: https://doc.rust-lang.org/std/cell/struct.RefCell.html
+//! [`RwLock`]: https://doc.rust-lang.org/std/sync/struct.RwLock.html
 //! [`QCell`]: struct.QCell.html
 //! [`QCellOwner`]: struct.QCellOwner.html
 //! [`TCell`]: struct.TCell.html
@@ -323,7 +342,23 @@ pub mod doctest_qcell;
 pub mod doctest_tcell;
 pub mod doctest_tlcell;
 
-// Used in lcell, tcell, tlcell.
+// Used in LCell, TCell and TLCell.  See the Rustonomicon chapters
+// "Subtyping and Variance"
+// (https://doc.rust-lang.org/nomicon/subtyping.html) and
+// "PhantomData"
+// (https://doc.rust-lang.org/nomicon/phantom-data.html).
+//
+// `fn(T) -> T` forces T to be treated as invariant.  This does not
+// change the type of 'T', but changes what that type can be converted
+// into.  Variance in Rust only applies to lifetimes, so this is about
+// blocking conversion of one lifetime into a larger or smaller one.
+// We need invariance in the marker type for `TCell` and `TLCell`
+// because otherwise it's possible for a malicious programmer to cheat
+// the singleton check and obtain undefined behaviour.
+//
+// `fn(T) -> T` is better than `Cell<T>` or `*mut T` because it passes
+// through the `UnwindSafe` trait unaffected.
+//
 // Needs an abstraction as a struct, since otherwise we'll get errors
 // regarding "function pointers cannot appear in constant functions"
 struct Invariant<T>(fn(T) -> T);
@@ -362,3 +397,7 @@ pub mod compiletest {
         t.compile_fail("src/compiletest/*.rs");
     }
 }
+
+// Static assertions on traits
+#[cfg(test)]
+mod assertions;
