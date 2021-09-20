@@ -30,7 +30,7 @@ error[E0277]: `*const ()` cannot be sent between threads safely
     |          ---- required by this bound in `spawn`
     |
     = help: within `[closure@$DIR/src/compiletest/tlcell-15.rs:15:24: 17:6]`, the trait `Send` is not implemented for `*const ()`
-    = note: required because it appears within the type `(*const (), qcell::Invariant<Marker>)`
-    = note: required because it appears within the type `PhantomData<(*const (), qcell::Invariant<Marker>)>`
+    = note: required because it appears within the type `qcell::tlcell::NotSendOrSync`
+    = note: required because it appears within the type `PhantomData<qcell::tlcell::NotSendOrSync>`
     = note: required because it appears within the type `TLCellOwner<Marker>`
     = note: required because it appears within the type `[closure@$DIR/src/compiletest/tlcell-15.rs:15:24: 17:6]`

@@ -7,6 +7,6 @@ error[E0277]: `*const ()` cannot be sent between threads safely
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `*const ()` cannot be sent between threads safely
   |
   = help: within `TLCellOwner<Marker>`, the trait `Send` is not implemented for `*const ()`
-  = note: required because it appears within the type `(*const (), qcell::Invariant<Marker>)`
-  = note: required because it appears within the type `PhantomData<(*const (), qcell::Invariant<Marker>)>`
+  = note: required because it appears within the type `qcell::tlcell::NotSendOrSync`
+  = note: required because it appears within the type `PhantomData<qcell::tlcell::NotSendOrSync>`
   = note: required because it appears within the type `TLCellOwner<Marker>`

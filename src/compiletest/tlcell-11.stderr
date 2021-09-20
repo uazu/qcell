@@ -7,6 +7,6 @@ error[E0277]: `*const ()` cannot be shared between threads safely
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `*const ()` cannot be shared between threads safely
   |
   = help: within `TLCellOwner<Marker>`, the trait `Sync` is not implemented for `*const ()`
-  = note: required because it appears within the type `(*const (), qcell::Invariant<Marker>)`
-  = note: required because it appears within the type `PhantomData<(*const (), qcell::Invariant<Marker>)>`
+  = note: required because it appears within the type `qcell::tlcell::NotSendOrSync`
+  = note: required because it appears within the type `PhantomData<qcell::tlcell::NotSendOrSync>`
   = note: required because it appears within the type `TLCellOwner<Marker>`
