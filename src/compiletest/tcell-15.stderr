@@ -1,14 +1,20 @@
 error[E0277]: `Rc<i32>` cannot be sent between threads safely
    --> $DIR/tcell-15.rs:15:5
     |
-15  |     std::thread::spawn(move || {    // Compile fail
-    |     ^^^^^^^^^^^^^^^^^^ `Rc<i32>` cannot be sent between threads safely
+15  |       std::thread::spawn(move || {    // Compile fail
+    |  _____^^^^^^^^^^^^^^^^^^_-
+    | |     |
+    | |     `Rc<i32>` cannot be sent between threads safely
+16  | |         assert_eq!(100, **owner.ro(&cell));
+17  | |     }).join();
+    | |_____- within this `[closure@$DIR/src/compiletest/tcell-15.rs:15:24: 17:6]`
     |
    ::: $RUST/std/src/thread/mod.rs
     |
-    |     F: Send + 'static,
-    |        ---- required by this bound in `spawn`
+    |       F: Send + 'static,
+    |          ---- required by this bound in `spawn`
     |
-    = help: the trait `Send` is not implemented for `Rc<i32>`
-    = note: required because of the requirements on the impl of `Send` for `TCell<Marker, Rc<i32>>`
+    = help: within `[closure@$DIR/src/compiletest/tcell-15.rs:15:24: 17:6]`, the trait `Send` is not implemented for `Rc<i32>`
+    = note: required because it appears within the type `UnsafeCell<Rc<i32>>`
+    = note: required because it appears within the type `TCell<Marker, Rc<i32>>`
     = note: required because it appears within the type `[closure@$DIR/src/compiletest/tcell-15.rs:15:24: 17:6]`
