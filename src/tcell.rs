@@ -179,7 +179,7 @@ pub struct TCell<Q, T: ?Sized> {
     // use Invariant<Q> for invariant parameter, not influencing
     // other auto-traits, e.g. UnwindSafe (unlike other solutions like `*mut Q` or `Cell<Q>`)
     owner: PhantomData<Invariant<Q>>,
-    // Disables `Sync`, gives the right `Send` implementation.
+    // Also disables `Sync`, gives the right `Send` implementation.
     // `Sync` is re-enabled below under certain conditions.
     value: UnsafeCell<T>,
 }

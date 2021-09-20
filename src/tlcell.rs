@@ -133,12 +133,10 @@ impl<Q: 'static> TLCellOwner<Q> {
 ///
 /// [`TLCellOwner`]: struct.TLCellOwner.html
 pub struct TLCell<Q, T: ?Sized> {
-    // Use NotSendOrSync to disable Send
-    // (and Sync, but `UnsafeCell` would already do that, too)
-    not_send_or_sync: PhantomData<NotSendOrSync>,
     // use Invariant<Q> for invariant parameter, not influencing
     // other auto-traits, e.g. UnwindSafe (unlike other solutions like `*mut Q` or `Cell<Q>`)
     owner: PhantomData<Invariant<Q>>,
+    // `UnsafeCell` already disables `Sync` and gives the right `Send` implementation.
     value: UnsafeCell<T>,
 }
 
@@ -148,7 +146,6 @@ impl<Q, T> TLCell<Q, T> {
     #[inline]
     pub const fn new(value: T) -> TLCell<Q, T> {
         TLCell {
-            not_send_or_sync: PhantomData,
             owner: PhantomData,
             value: UnsafeCell::new(value),
         }
@@ -175,19 +172,6 @@ impl<Q, T: ?Sized> TLCell<Q, T> {
         owner.rw(self)
     }
 }
-
-// TLCell absolutely cannot be Sync, since otherwise you could send
-// two &TLCell's to two different threads, that each have their own
-// TLCellOwner<Q> instance and that could therefore both give out
-// a &mut T to the same T.
-//
-// However, it's fine to Send a TLCell to a different thread, because
-// you can only send something if nothing borrows it, so nothing can
-// be accessing its contents. After sending the TLCell, the original
-// TLCellOwner can no longer give access to the TLCell's contents since
-// TLCellOwner is !Send + !Sync. Only the TLCellOwner of the new thread
-// can give access to this TLCell's contents now.
-unsafe impl<Q, T: Send + ?Sized> Send for TLCell<Q, T> {}
 
 #[cfg(test)]
 mod tests {
