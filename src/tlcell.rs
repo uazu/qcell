@@ -15,9 +15,10 @@ std::thread_local! {
 /// See [crate documentation](index.html).
 pub struct TLCellOwner<Q: 'static> {
     // Use *const () to disable Send and Sync,
+    not_send_sync: PhantomData<*const ()>,
     // use Invariant<Q> for invariant parameter, not influencing
-    // other auto-traits like UnwindSafe
-    typ: PhantomData<(*const (), Invariant<Q>)>,
+    // other auto-traits, e.g. UnwindSafe (unlike other solutions like `*mut Q` or `Cell<Q>`)
+    typ: PhantomData<Invariant<Q>>,
 }
 
 impl<Q: 'static> Drop for TLCellOwner<Q> {
@@ -45,7 +46,10 @@ impl<Q: 'static> TLCellOwner<Q> {
             assert!(set.borrow_mut().insert(TypeId::of::<Q>()),
                     "Illegal to create two TLCellOwner instances within the same thread with the same marker type parameter");
         });
-        Self { typ: PhantomData }
+        Self {
+            not_send_sync: PhantomData,
+            typ: PhantomData,
+        }
     }
 
     /// Create a new cell owned by this owner instance.  See also
@@ -127,10 +131,11 @@ impl<Q: 'static> TLCellOwner<Q> {
 ///
 /// [`TLCellOwner`]: struct.TLCellOwner.html
 pub struct TLCell<Q, T: ?Sized> {
-    // Use *const () to disable Send and Sync,
+    // Use *const () to disable Send,
+    not_sync: PhantomData<*const ()>,
     // use Invariant<Q> for invariant parameter, not influencing
     // other auto-traits like UnwindSafe
-    owner: PhantomData<(*const (), Invariant<Q>)>,
+    owner: PhantomData<Invariant<Q>>,
     value: UnsafeCell<T>,
 }
 
@@ -140,6 +145,7 @@ impl<Q, T> TLCell<Q, T> {
     #[inline]
     pub const fn new(value: T) -> TLCell<Q, T> {
         TLCell {
+            not_sync: PhantomData,
             owner: PhantomData,
             value: UnsafeCell::new(value),
         }
