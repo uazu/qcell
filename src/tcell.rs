@@ -180,7 +180,9 @@ pub struct TCell<Q, T: ?Sized> {
     // below under certain conditions,
     // use Invariant<Q> for invariant parameter, not influencing
     // other auto-traits like UnwindSafe
-    owner: PhantomData<(*const (), Invariant<Q>)>,
+    owner: PhantomData<Invariant<Q>>,
+    // Disables `Sync`, gives the right `Send` implementation.
+    // `Sync` is re-enabled below under certain conditions.
     value: UnsafeCell<T>,
 }
 
@@ -216,11 +218,6 @@ impl<Q, T: ?Sized> TCell<Q, T> {
         owner.rw(self)
     }
 }
-
-// It's fine to Send a TCell to a different thread if the containted
-// type is Send, because you can only send something if nothing
-// borrows it, so nothing can be accessing its contents.
-unsafe impl<Q, T: Send + ?Sized> Send for TCell<Q, T> {}
 
 // We can add a Sync implementation, since it's fine to send a &TCell
 // to another thread, and even mutably borrow the value there, as long
