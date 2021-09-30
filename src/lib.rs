@@ -92,23 +92,28 @@
 //!
 //! Here's a working version using [`TCell`] instead:
 //!
-//! ```
-//!# use qcell::{TCell, TCellOwner};
-//!# use std::rc::Rc;
-//! struct Marker;
-//! type ACell<T> = TCell<Marker, T>;
-//! type ACellOwner = TCellOwner<Marker>;
-//! let mut owner = ACellOwner::new();
-//!
-//! let item = Rc::new(ACell::new(Vec::<u8>::new()));
-//! let iref = owner.rw(&item);
-//! iref.push(1);
-//! test(&mut owner, &item);
-//!
-//! fn test(owner: &mut ACellOwner, item: &Rc<ACell<Vec<u8>>>) {
-//!     owner.rw(&item).push(2);
-//! }
-//! ```
+#![cfg_attr(
+    feature = "std",
+    doc = "
+ ```
+# use qcell::{TCell, TCellOwner};
+# use std::rc::Rc;
+ struct Marker;
+ type ACell<T> = TCell<Marker, T>;
+ type ACellOwner = TCellOwner<Marker>;
+ let mut owner = ACellOwner::new();
+
+ let item = Rc::new(ACell::new(Vec::<u8>::new()));
+ let iref = owner.rw(&item);
+ iref.push(1);
+ test(&mut owner, &item);
+
+ fn test(owner: &mut ACellOwner, item: &Rc<ACell<Vec<u8>>>) {
+     owner.rw(&item).push(2);
+ }
+ ```
+"
+)]
 //!
 //! And the same thing again using [`LCell`]:
 //!
@@ -330,16 +335,23 @@
 //! [**Migi**]: https://github.com/Migi
 //! [**pythonesque**]: https://github.com/pythonesque
 
+#![cfg_attr(not(feature = "std"), no_std)]
 #![deny(rust_2018_idioms)]
 
 mod lcell;
+#[cfg(feature = "std")]
 mod qcell;
+#[cfg(feature = "std")]
 mod tcell;
+#[cfg(feature = "std")]
 mod tlcell;
 
 pub mod doctest_lcell;
+#[cfg(feature = "std")]
 pub mod doctest_qcell;
+#[cfg(feature = "std")]
 pub mod doctest_tcell;
+#[cfg(feature = "std")]
 pub mod doctest_tlcell;
 
 // Used in LCell, TCell and TLCell.  See the Rustonomicon chapters
@@ -365,13 +377,11 @@ struct Invariant<T>(fn(T) -> T);
 
 pub use crate::lcell::LCell;
 pub use crate::lcell::LCellOwner;
-pub use crate::qcell::QCell;
-pub use crate::qcell::QCellOwner;
-pub use crate::qcell::QCellOwnerID;
-pub use crate::tcell::TCell;
-pub use crate::tcell::TCellOwner;
-pub use crate::tlcell::TLCell;
-pub use crate::tlcell::TLCellOwner;
+#[cfg(feature = "std")]
+pub use crate::{
+    qcell::QCell, qcell::QCellOwner, qcell::QCellOwnerID, tcell::TCell, tcell::TCellOwner,
+    tlcell::TLCell, tlcell::TLCellOwner,
+};
 
 // The compile-tests double-check that the compile_fail tests in the
 // doctests actually fail for the reason intended, not for some other
@@ -394,10 +404,14 @@ pub mod compiletest {
     #[test]
     fn ui() {
         let t = trybuild::TestCases::new();
-        t.compile_fail("src/compiletest/*.rs");
+        if cfg!(feature = "std") {
+            t.compile_fail("src/compiletest/*.rs");
+        } else {
+            t.compile_fail("src/compiletest/lcell-*.rs");
+        }
     }
 }
 
 // Static assertions on traits
-#[cfg(test)]
+#[cfg(all(test, feature = "std"))]
 mod assertions;

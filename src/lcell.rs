@@ -1,5 +1,5 @@
-use std::cell::UnsafeCell;
-use std::marker::PhantomData;
+use core::cell::UnsafeCell;
+use core::marker::PhantomData;
 
 use super::Invariant;
 type Id<'id> = PhantomData<Invariant<&'id ()>>;
@@ -190,8 +190,10 @@ unsafe impl<'id, T: Send + Sync + ?Sized> Sync for LCell<'id, T> {}
 
 #[cfg(test)]
 mod tests {
+    extern crate alloc;
+
     use super::{LCell, LCellOwner};
-    use std::rc::Rc;
+    use alloc::{boxed::Box, rc::Rc};
 
     #[test]
     fn lcell() {

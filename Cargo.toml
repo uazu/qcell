@@ -14,6 +14,10 @@ documentation = "https://docs.rs/qcell"
 keywords = ["cell","refcell","borrow","borrowing","rc"]
 categories = [ "data-structures", "memory-management", "rust-patterns" ]
 
+[features]
+default = ["std"]
+std = []
+
 [dependencies]
 once_cell = "1.4.0"
 
