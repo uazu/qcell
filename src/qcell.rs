@@ -350,8 +350,8 @@ mod tests {
         let id4 = owner4.id;
         let owner5 = QCellOwner::new();
         let id5 = owner5.id;
-        assert_eq!(id4, id1, "Expected ID 1 to be reused");
-        assert_eq!(id5, id3, "Expected ID 3 to be reused");
+        assert!((id1 == id4 || id1 == id5), "Expected ID 1 to be reused");
+        assert!((id3 == id4 || id3 == id5), "Expected ID 3 to be reused");
         assert_ne!(id4, id5, "Expected ID 4/5 to be different");
     }
 
