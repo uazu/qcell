@@ -203,7 +203,7 @@
 //! Cell | Owner ID | Cell overhead | Borrow check | Owner check | Owner creation check
 //! ---|---|---|---|---|---
 //! `RefCell` | n/a | `usize` | Runtime | n/a | n/a
-//! `QCell` | integer | `u32` | Compile-time | Runtime | Runtime
+//! `QCell` | integer | `usize` | Compile-time | Runtime | Runtime
 //! `TCell` or `TLCell` | marker type | none | Compile-time | Compile-time | Runtime
 //! `LCell` | lifetime | none | Compile-time | Compile-time | Compile-time
 //!

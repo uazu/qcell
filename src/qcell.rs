@@ -1,9 +1,52 @@
-use once_cell::sync::Lazy;
 use std::cell::UnsafeCell;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Mutex;
 
-type OwnerID = u32;
+// Ensure the alignment is 2 so we can use odd-numbered pointers for
+// those created via `fast_new`.
+#[repr(align(2))]
+#[derive(Clone, Copy)]
+struct OwnerIDTarget {
+    _data: u16,
+}
+
+const MAGIC_OWNER_ID_TARGET: OwnerIDTarget = OwnerIDTarget { _data: 0xCE11 };
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct OwnerID {
+    ptr: *mut OwnerIDTarget,
+}
+
+// Since OwnerID is used almost exclusively as a value type for
+// comparisons, Send and Sync are obviously ok to implement.
+unsafe impl Send for OwnerID {}
+unsafe impl Sync for OwnerID {}
+
+impl OwnerID {
+    fn from_box(b: Box<OwnerIDTarget>) -> Self {
+        Self {
+            ptr: Box::into_raw(b),
+        }
+    }
+
+    fn from_usize(val: usize) -> Self {
+        debug_assert_ne!(val % 2, 0, "OwnerID::from_usize called with an even value");
+        Self {
+            ptr: val as *mut OwnerIDTarget,
+        }
+    }
+
+    // this function is internal, so it doesn't really need to be
+    // unsafe, but the unsafe can serve as a reminder to make sure we
+    // only call it in the right place
+    unsafe fn free_box_if_aligned(self) {
+        let alignment = std::mem::align_of::<OwnerIDTarget>();
+        // if the alignment is not offset, assume this was created via
+        // from_box and should be freed
+        if self.ptr.align_offset(alignment) == 0 {
+            Box::from_raw(self.ptr);
+        }
+    }
+}
 
 /// Internal ID associated with a [`QCellOwner`].
 ///
@@ -41,39 +84,19 @@ impl QCellOwnerID {
 ///
 /// See [crate documentation](index.html).
 pub struct QCellOwner {
-    // Reserve first half of range for safe version, second half for
-    // unsafe version
     id: OwnerID,
 }
 
 // Used to generate a unique QCellOwnerID number for each QCellOwner
-// with the `fast_new()` call.
-static FAST_QCELLOWNER_ID: AtomicUsize = AtomicUsize::new(0);
-const FAST_FIRST_ID: OwnerID = 0x8000_0000;
-
-// Used to allocate temporally unique QCellOwnerID numbers for each
-// QCellOwner created with the slower `new()` call.  Expected pattern
-// of allocation is to have just a few owners active at any one time
-// (let's say 1-4 for each component using QCell), but then perhaps
-// very many components created and destroyed over the lifetime of the
-// process, possibly way more than 2^32.  So a free list suits this
-// pattern.
-struct SafeQCellOwnerIDSource {
-    free: Vec<OwnerID>, // Free list
-    next: OwnerID,
-}
-static SAFE_QCELLOWNER_ID: Lazy<Mutex<SafeQCellOwnerIDSource>> = Lazy::new(|| {
-    Mutex::new(SafeQCellOwnerIDSource {
-        free: Vec::new(),
-        next: 0,
-    })
-});
+// with the `fast_new()` call.  Start at index 1 and increment by 2 each time
+// so the number is always odd - this ensures it will never conflict with
+// a real pointer.
+static FAST_QCELLOWNER_ID: AtomicUsize = AtomicUsize::new(1);
 
 impl Drop for QCellOwner {
     fn drop(&mut self) {
-        // Re-use safe IDs
-        if self.id < FAST_FIRST_ID {
-            SAFE_QCELLOWNER_ID.lock().unwrap().free.push(self.id);
+        unsafe {
+            self.id.free_box_if_aligned();
         }
     }
 }
@@ -88,16 +111,14 @@ impl QCellOwner {
     /// Create an owner that can be used for creating many `QCell`
     /// instances.  It will have a temporally unique ID associated
     /// with it to detect using the wrong owner to access a cell at
-    /// runtime, which is a programming error.  This call will panic
-    /// if the limit of 2^31 owners active at the same time is
-    /// reached.  This is the slow and safe version that uses a mutex
-    /// and a free list to allocate IDs.  If speed of this call
-    /// matters, then consider using [`fast_new()`](#method.fast_new)
-    /// instead.
+    /// runtime, which is a programming error.  This is the slow and
+    /// safe version that uses memory allocation to ensure unique
+    /// IDs.  If speed of this call matters, then consider using
+    /// [`fast_new()`](#method.fast_new) instead.
     ///
     /// This safe version does successfully defend against all
     /// malicious and unsafe use, as far as I am aware.  If not,
-    /// please raise an issue.  The same unique ID will later be
+    /// please raise an issue.  The same unique ID may later be
     /// allocated to someone else once you drop the returned owner,
     /// but this cannot be abused to cause unsafe access to cells
     /// because there will still be only one owner active at any one
@@ -112,19 +133,8 @@ impl QCellOwner {
     /// owner, because they are no longer of any use without the owner
     /// ID.
     pub fn new() -> Self {
-        let mut src = SAFE_QCELLOWNER_ID.lock().unwrap();
-        match src.free.pop() {
-            Some(id) => Self { id },
-            None => {
-                assert!(
-                    src.next < FAST_FIRST_ID,
-                    "More than 2^31 QCellOwner instances are active at the same time"
-                );
-                let id = src.next;
-                src.next += 1;
-                Self { id }
-            }
-        }
+        let id = OwnerID::from_box(Box::new(MAGIC_OWNER_ID_TARGET));
+        Self { id }
     }
 
     /// Create an owner that can be used for creating many `QCell`
@@ -142,24 +152,25 @@ impl QCellOwner {
     /// If used non-maliciously the chance of getting unsafe behaviour
     /// in practice is zero -- not just close to zero but actually
     /// zero.  To get unsafe behaviour, you'd have to accidentally
-    /// create exactly 2^31 more owners to get a duplicate ID and
-    /// you'd also have to have a bug in your code where you try to
-    /// use the wrong owner to access a cell (which should normally be
-    /// rejected with a panic).  Already this is vanishingly
-    /// improbable, but then if that happened by accident on one run
-    /// but not on another, your code would still panic and you would
-    /// fix your bug.  So once that bug in your code is fixed, the
-    /// risk is zero.  No amount of fuzz-testing could ever cause
-    /// unsafe behaviour once that bug is fixed.  So whilst
+    /// create exactly `usize::MAX / 2` more owners to get a duplicate
+    /// ID and you'd also have to have a bug in your code where you
+    /// try to use the wrong owner to access a cell (which should
+    /// normally be rejected with a panic).  Already this is
+    /// vanishingly improbable, but then if that happened by accident
+    /// on one run but not on another, your code would still panic and
+    /// you would fix your bug.  So once that bug in your code is
+    /// fixed, the risk is zero.  No amount of fuzz-testing could ever
+    /// cause unsafe behaviour once that bug is fixed.  So whilst
     /// strictly-speaking this call is unsafe, in practice there is no
     /// risk unless you really try hard to exploit it.
     pub unsafe fn fast_new() -> Self {
-        Self {
-            // Range 0x80000000 to 0xFFFFFFFF reserved for fast
-            // version.  Use `Relaxed` ordering because we don't care
-            // who gets which ID, just that they are different.
-            id: FAST_QCELLOWNER_ID.fetch_add(1, Ordering::Relaxed) as u32 | FAST_FIRST_ID,
-        }
+        // Must increment by 2 to ensure we never overlap with a
+        // real pointer.
+        // Use `Relaxed` ordering because we don't care
+        // who gets which ID, just that they are different.
+        let value = FAST_QCELLOWNER_ID.fetch_add(2, Ordering::Relaxed);
+        let id = OwnerID::from_usize(value);
+        Self { id }
     }
 
     /// Create a new cell owned by this owner instance.  See also
@@ -342,7 +353,6 @@ mod tests {
         drop(owner2);
         let owner3 = QCellOwner::new();
         let id3 = owner3.id;
-        assert_eq!(id3, id2, "Expected ID 2 to be reused");
         assert_ne!(id1, id3, "Expected ID 1/3 to be different");
         drop(owner3);
         drop(owner1);
@@ -350,8 +360,6 @@ mod tests {
         let id4 = owner4.id;
         let owner5 = QCellOwner::new();
         let id5 = owner5.id;
-        assert_eq!(id4, id1, "Expected ID 1 to be reused");
-        assert_eq!(id5, id3, "Expected ID 3 to be reused");
         assert_ne!(id4, id5, "Expected ID 4/5 to be different");
     }
 
