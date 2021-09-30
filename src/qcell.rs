@@ -1,7 +1,5 @@
-use once_cell::sync::Lazy;
 use std::cell::UnsafeCell;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Mutex;
 
 type OwnerID = u32;
 
@@ -58,22 +56,15 @@ const FAST_FIRST_ID: OwnerID = 0x8000_0000;
 // very many components created and destroyed over the lifetime of the
 // process, possibly way more than 2^32.  So a free list suits this
 // pattern.
-struct SafeQCellOwnerIDSource {
-    free: Vec<OwnerID>, // Free list
-    next: OwnerID,
-}
-static SAFE_QCELLOWNER_ID: Lazy<Mutex<SafeQCellOwnerIDSource>> = Lazy::new(|| {
-    Mutex::new(SafeQCellOwnerIDSource {
-        free: Vec::new(),
-        next: 0,
-    })
-});
+static SAFE_QCELLOWNER_FREE_LIST: crossbeam_queue::SegQueue<OwnerID> =
+    crossbeam_queue::SegQueue::new();
+static SAFE_QCELLOWNER_NEXT: AtomicUsize = AtomicUsize::new(0);
 
 impl Drop for QCellOwner {
     fn drop(&mut self) {
         // Re-use safe IDs
         if self.id < FAST_FIRST_ID {
-            SAFE_QCELLOWNER_ID.lock().unwrap().free.push(self.id);
+            SAFE_QCELLOWNER_FREE_LIST.push(self.id);
         }
     }
 }
@@ -112,17 +103,21 @@ impl QCellOwner {
     /// owner, because they are no longer of any use without the owner
     /// ID.
     pub fn new() -> Self {
-        let mut src = SAFE_QCELLOWNER_ID.lock().unwrap();
-        match src.free.pop() {
-            Some(id) => Self { id },
-            None => {
-                assert!(
-                    src.next < FAST_FIRST_ID,
-                    "More than 2^31 QCellOwner instances are active at the same time"
-                );
-                let id = src.next;
-                src.next += 1;
-                Self { id }
+        if let Some(id) = SAFE_QCELLOWNER_FREE_LIST.pop() {
+            return Self { id };
+        }
+        match SAFE_QCELLOWNER_NEXT.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |next| {
+            use std::convert::TryFrom;
+            let max_id = usize::try_from(FAST_FIRST_ID).unwrap_or(usize::MAX);
+            if next < max_id {
+                Some(next + 1)
+            } else {
+                None
+            }
+        }) {
+            Ok(id) => Self { id: id as u32 },
+            Err(_) => {
+                panic!("More than 2^31 QCellOwner instances are active at the same time")
             }
         }
     }
