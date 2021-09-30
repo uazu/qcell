@@ -81,10 +81,10 @@ impl QCellOwner {
     /// with it to detect using the wrong owner to access a cell at
     /// runtime, which is a programming error.  This call will panic
     /// if the limit of 2^31 owners active at the same time is
-    /// reached.  This is the slow and safe version that uses a mutex
-    /// and a free list to allocate IDs.  If speed of this call
-    /// matters, then consider using [`fast_new()`](#method.fast_new)
-    /// instead.
+    /// reached.  This is the slow and safe version that uses
+    /// non-trivial synchronization and a free list to allocate IDs.
+    /// If speed of this call matters, then consider using
+    /// [`fast_new()`](#method.fast_new) instead.
     ///
     /// This safe version does successfully defend against all
     /// malicious and unsafe use, as far as I am aware.  If not,
