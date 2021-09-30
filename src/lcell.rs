@@ -190,10 +190,8 @@ unsafe impl<'id, T: Send + Sync + ?Sized> Sync for LCell<'id, T> {}
 
 #[cfg(test)]
 mod tests {
-    extern crate alloc;
-
     use super::{LCell, LCellOwner};
-    use alloc::{boxed::Box, rc::Rc};
+    use std::rc::Rc;
 
     #[test]
     fn lcell() {

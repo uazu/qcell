@@ -335,7 +335,7 @@
 //! [**Migi**]: https://github.com/Migi
 //! [**pythonesque**]: https://github.com/pythonesque
 
-#![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(not(any(feature = "std", test)), no_std)]
 #![deny(rust_2018_idioms)]
 
 mod lcell;
