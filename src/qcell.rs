@@ -11,42 +11,7 @@ struct OwnerIDTarget {
 
 const MAGIC_OWNER_ID_TARGET: OwnerIDTarget = OwnerIDTarget { _data: 0xCE11 };
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-struct OwnerID {
-    ptr: *mut OwnerIDTarget,
-}
-
-// Since OwnerID is used almost exclusively as a value type for
-// comparisons, Send and Sync are obviously ok to implement.
-unsafe impl Send for OwnerID {}
-unsafe impl Sync for OwnerID {}
-
-impl OwnerID {
-    fn from_box(b: Box<OwnerIDTarget>) -> Self {
-        Self {
-            ptr: Box::into_raw(b),
-        }
-    }
-
-    fn from_usize(val: usize) -> Self {
-        debug_assert_ne!(val % 2, 0, "OwnerID::from_usize called with an even value");
-        Self {
-            ptr: val as *mut OwnerIDTarget,
-        }
-    }
-
-    // this function is internal, so it doesn't really need to be
-    // unsafe, but the unsafe can serve as a reminder to make sure we
-    // only call it in the right place
-    unsafe fn free_box_if_aligned(self) {
-        let alignment = std::mem::align_of::<OwnerIDTarget>();
-        // if the alignment is not offset, assume this was created via
-        // from_box and should be freed
-        if self.ptr.align_offset(alignment) == 0 {
-            Box::from_raw(self.ptr);
-        }
-    }
-}
+type OwnerID = usize;
 
 /// Internal ID associated with a [`QCellOwner`].
 ///
@@ -84,6 +49,7 @@ impl QCellOwnerID {
 ///
 /// See [crate documentation](index.html).
 pub struct QCellOwner {
+    _handle: Option<Box<OwnerIDTarget>>,
     id: OwnerID,
 }
 
@@ -92,14 +58,6 @@ pub struct QCellOwner {
 // so the number is always odd - this ensures it will never conflict with
 // a real pointer.
 static FAST_QCELLOWNER_ID: AtomicUsize = AtomicUsize::new(1);
-
-impl Drop for QCellOwner {
-    fn drop(&mut self) {
-        unsafe {
-            self.id.free_box_if_aligned();
-        }
-    }
-}
 
 impl Default for QCellOwner {
     fn default() -> Self {
@@ -133,8 +91,13 @@ impl QCellOwner {
     /// owner, because they are no longer of any use without the owner
     /// ID.
     pub fn new() -> Self {
-        let id = OwnerID::from_box(Box::new(MAGIC_OWNER_ID_TARGET));
-        Self { id }
+        let handle = Box::new(MAGIC_OWNER_ID_TARGET);
+        let raw_ptr: *const OwnerIDTarget = &*handle;
+        let id = raw_ptr as usize;
+        Self {
+            _handle: Some(handle),
+            id,
+        }
     }
 
     /// Create an owner that can be used for creating many `QCell`
@@ -168,9 +131,8 @@ impl QCellOwner {
         // real pointer.
         // Use `Relaxed` ordering because we don't care
         // who gets which ID, just that they are different.
-        let value = FAST_QCELLOWNER_ID.fetch_add(2, Ordering::Relaxed);
-        let id = OwnerID::from_usize(value);
-        Self { id }
+        let id = FAST_QCELLOWNER_ID.fetch_add(2, Ordering::Relaxed);
+        Self { _handle: None, id }
     }
 
     /// Create a new cell owned by this owner instance.  See also
