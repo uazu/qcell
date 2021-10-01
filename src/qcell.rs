@@ -1,5 +1,8 @@
-use std::cell::UnsafeCell;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use core::cell::UnsafeCell;
+use core::sync::atomic::{AtomicUsize, Ordering};
+
+#[cfg(feature = "alloc")]
+use alloc::boxed::Box;
 
 // Ensure the alignment is 2 so we can use odd-numbered pointers for
 // those created via `fast_new`.
@@ -49,6 +52,7 @@ impl QCellOwnerID {
 ///
 /// See [crate documentation](index.html).
 pub struct QCellOwner {
+    #[cfg(feature = "alloc")]
     _handle: Option<Box<OwnerIDTarget>>,
     id: OwnerID,
 }
@@ -59,6 +63,7 @@ pub struct QCellOwner {
 // a real pointer.
 static FAST_QCELLOWNER_ID: AtomicUsize = AtomicUsize::new(1);
 
+#[cfg(feature = "alloc")]
 impl Default for QCellOwner {
     fn default() -> Self {
         QCellOwner::new()
@@ -90,6 +95,7 @@ impl QCellOwner {
     /// to drop all those cells at the same time as dropping the
     /// owner, because they are no longer of any use without the owner
     /// ID.
+    #[cfg(feature = "alloc")]
     pub fn new() -> Self {
         let handle = Box::new(MAGIC_OWNER_ID_TARGET);
         let raw_ptr: *const OwnerIDTarget = &*handle;
@@ -132,7 +138,11 @@ impl QCellOwner {
         // Use `Relaxed` ordering because we don't care
         // who gets which ID, just that they are different.
         let id = FAST_QCELLOWNER_ID.fetch_add(2, Ordering::Relaxed);
-        Self { _handle: None, id }
+        Self {
+            #[cfg(feature = "alloc")]
+            _handle: None,
+            id,
+        }
     }
 
     /// Create a new cell owned by this owner instance.  See also
@@ -278,7 +288,7 @@ impl<T: ?Sized> QCell<T> {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "alloc"))]
 mod tests {
     use super::{QCell, QCellOwner};
     use once_cell::sync::Lazy;

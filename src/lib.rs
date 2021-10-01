@@ -338,8 +338,10 @@
 #![cfg_attr(not(any(feature = "std", test)), no_std)]
 #![deny(rust_2018_idioms)]
 
+#[cfg(feature = "alloc")]
+extern crate alloc;
+
 mod lcell;
-#[cfg(feature = "std")]
 mod qcell;
 #[cfg(feature = "std")]
 mod tcell;
@@ -347,7 +349,7 @@ mod tcell;
 mod tlcell;
 
 pub mod doctest_lcell;
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 pub mod doctest_qcell;
 #[cfg(feature = "std")]
 pub mod doctest_tcell;
@@ -377,11 +379,12 @@ struct Invariant<T>(fn(T) -> T);
 
 pub use crate::lcell::LCell;
 pub use crate::lcell::LCellOwner;
+pub use crate::qcell::QCell;
+pub use crate::qcell::QCellOwner;
+pub use crate::qcell::QCellOwnerID;
+
 #[cfg(feature = "std")]
-pub use crate::{
-    qcell::QCell, qcell::QCellOwner, qcell::QCellOwnerID, tcell::TCell, tcell::TCellOwner,
-    tlcell::TLCell, tlcell::TLCellOwner,
-};
+pub use crate::{tcell::TCell, tcell::TCellOwner, tlcell::TLCell, tlcell::TLCellOwner};
 
 // The compile-tests double-check that the compile_fail tests in the
 // doctests actually fail for the reason intended, not for some other
@@ -406,6 +409,9 @@ pub mod compiletest {
         let t = trybuild::TestCases::new();
         if cfg!(feature = "std") {
             t.compile_fail("src/compiletest/*.rs");
+        } else if cfg!(feature = "alloc") {
+            t.compile_fail("src/compiletest/lcell-*.rs");
+            t.compile_fail("src/compiletest/qcell-*.rs");
         } else {
             t.compile_fail("src/compiletest/lcell-*.rs");
         }
@@ -413,5 +419,5 @@ pub mod compiletest {
 }
 
 // Static assertions on traits
-#[cfg(all(test, feature = "std"))]
+#[cfg(test)]
 mod assertions;
