@@ -171,6 +171,7 @@
 //! [`RefCell`] pros and cons:
 //!
 //! - Pro: Simple
+//! - Pro: no_std support
 //! - Pro: Allows very flexible borrowing patterns
 //! - Con: No compile-time borrowing checks
 //! - Con: Can panic due to distant code changes
@@ -179,6 +180,7 @@
 //! [`QCell`] pros and cons:
 //!
 //! - Pro: Simple
+//! - Pro: no_std support
 //! - Pro: Compile-time borrowing checks
 //! - Pro: Dynamic owner creation, not limited in any way
 //! - Pro: No lifetime annotations or type parameters required
@@ -195,6 +197,7 @@
 //! (TLCell), meaning only one owner is allowed per thread or process
 //! per marker type.  Code intended to be nested on the call stack
 //! must be parameterised with an external marker type.
+//! - Con: requires std
 //!
 //! [`LCell`] pros and cons:
 //!
@@ -202,6 +205,7 @@
 //! - Pro: No overhead at runtime for borrowing or ownership checks
 //! - Pro: No cell space overhead
 //! - Pro: No need for singletons, meaning that one use does not limit other nested uses
+//! - Pro: no_std support
 //! - Con: Can only borrow up to 3 objects at a time
 //! - Con: Requires lifetime annotations on calls and structures
 //!
@@ -336,6 +340,7 @@
 //! [**pythonesque**]: https://github.com/pythonesque
 
 #![cfg_attr(not(any(feature = "std", test)), no_std)]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 #![deny(rust_2018_idioms)]
 
 #[cfg(feature = "alloc")]

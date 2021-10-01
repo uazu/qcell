@@ -15,6 +15,7 @@ struct NotSendOrSync(*const ());
 /// instances.
 ///
 /// See [crate documentation](index.html).
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 pub struct TLCellOwner<Q: 'static> {
     // Use NotSendOrSync to disable Send and Sync,
     not_send_or_sync: PhantomData<NotSendOrSync>,
@@ -131,6 +132,7 @@ impl<Q: 'static> TLCellOwner<Q> {
 /// See also [crate documentation](index.html).
 ///
 /// [`TLCellOwner`]: struct.TLCellOwner.html
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 pub struct TLCell<Q, T: ?Sized> {
     // Use Invariant<Q> for invariant parameter
     owner: PhantomData<Invariant<Q>>,

@@ -14,6 +14,7 @@ static SINGLETON_CHECK_CONDVAR: Lazy<Condvar> = Lazy::new(Condvar::new);
 /// instances.
 ///
 /// See [crate documentation](index.html).
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 pub struct TCellOwner<Q: 'static> {
     // Allow Send and Sync, and Q is invariant
     typ: PhantomData<Invariant<Q>>,
@@ -175,6 +176,7 @@ impl<Q: 'static> TCellOwner<Q> {
 /// See also [crate documentation](index.html).
 ///
 /// [`TCellOwner`]: struct.TCellOwner.html
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 pub struct TCell<Q, T: ?Sized> {
     // Use Invariant<Q> for invariant parameter
     owner: PhantomData<Invariant<Q>>,

@@ -29,3 +29,7 @@ crossbeam = "0.7"
 trybuild = "1.0"
 rustversion = "1.0"
 rand = "0.8"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]

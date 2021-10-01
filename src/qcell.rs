@@ -64,6 +64,7 @@ pub struct QCellOwner {
 static FAST_QCELLOWNER_ID: AtomicUsize = AtomicUsize::new(1);
 
 #[cfg(feature = "alloc")]
+#[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
 impl Default for QCellOwner {
     fn default() -> Self {
         QCellOwner::new()
@@ -96,6 +97,7 @@ impl QCellOwner {
     /// owner, because they are no longer of any use without the owner
     /// ID.
     #[cfg(feature = "alloc")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
     pub fn new() -> Self {
         let handle = Box::new(MAGIC_OWNER_ID_TARGET);
         let raw_ptr: *const OwnerIDTarget = &*handle;
