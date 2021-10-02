@@ -92,23 +92,28 @@
 //!
 //! Here's a working version using [`TCell`] instead:
 //!
-//! ```
-//!# use qcell::{TCell, TCellOwner};
-//!# use std::rc::Rc;
-//! struct Marker;
-//! type ACell<T> = TCell<Marker, T>;
-//! type ACellOwner = TCellOwner<Marker>;
-//! let mut owner = ACellOwner::new();
-//!
-//! let item = Rc::new(ACell::new(Vec::<u8>::new()));
-//! let iref = owner.rw(&item);
-//! iref.push(1);
-//! test(&mut owner, &item);
-//!
-//! fn test(owner: &mut ACellOwner, item: &Rc<ACell<Vec<u8>>>) {
-//!     owner.rw(&item).push(2);
-//! }
-//! ```
+#![cfg_attr(
+    feature = "std",
+    doc = "
+ ```
+# use qcell::{TCell, TCellOwner};
+# use std::rc::Rc;
+ struct Marker;
+ type ACell<T> = TCell<Marker, T>;
+ type ACellOwner = TCellOwner<Marker>;
+ let mut owner = ACellOwner::new();
+
+ let item = Rc::new(ACell::new(Vec::<u8>::new()));
+ let iref = owner.rw(&item);
+ iref.push(1);
+ test(&mut owner, &item);
+
+ fn test(owner: &mut ACellOwner, item: &Rc<ACell<Vec<u8>>>) {
+     owner.rw(&item).push(2);
+ }
+ ```
+"
+)]
 //!
 //! And the same thing again using [`LCell`]:
 //!
@@ -166,6 +171,7 @@
 //! [`RefCell`] pros and cons:
 //!
 //! - Pro: Simple
+//! - Pro: no_std support
 //! - Pro: Allows very flexible borrowing patterns
 //! - Con: No compile-time borrowing checks
 //! - Con: Can panic due to distant code changes
@@ -174,6 +180,7 @@
 //! [`QCell`] pros and cons:
 //!
 //! - Pro: Simple
+//! - Pro: no_std support
 //! - Pro: Compile-time borrowing checks
 //! - Pro: Dynamic owner creation, not limited in any way
 //! - Pro: No lifetime annotations or type parameters required
@@ -190,6 +197,7 @@
 //! (TLCell), meaning only one owner is allowed per thread or process
 //! per marker type.  Code intended to be nested on the call stack
 //! must be parameterised with an external marker type.
+//! - Con: requires std
 //!
 //! [`LCell`] pros and cons:
 //!
@@ -197,6 +205,7 @@
 //! - Pro: No overhead at runtime for borrowing or ownership checks
 //! - Pro: No cell space overhead
 //! - Pro: No need for singletons, meaning that one use does not limit other nested uses
+//! - Pro: no_std support
 //! - Con: Can only borrow up to 3 objects at a time
 //! - Con: Requires lifetime annotations on calls and structures
 //!
@@ -330,16 +339,26 @@
 //! [**Migi**]: https://github.com/Migi
 //! [**pythonesque**]: https://github.com/pythonesque
 
+#![cfg_attr(not(any(feature = "std", test)), no_std)]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 #![deny(rust_2018_idioms)]
+
+#[cfg(feature = "alloc")]
+extern crate alloc;
 
 mod lcell;
 mod qcell;
+#[cfg(feature = "std")]
 mod tcell;
+#[cfg(feature = "std")]
 mod tlcell;
 
 pub mod doctest_lcell;
+#[cfg(feature = "alloc")]
 pub mod doctest_qcell;
+#[cfg(feature = "std")]
 pub mod doctest_tcell;
+#[cfg(feature = "std")]
 pub mod doctest_tlcell;
 
 // Used in LCell, TCell and TLCell.  See the Rustonomicon chapters
@@ -368,10 +387,9 @@ pub use crate::lcell::LCellOwner;
 pub use crate::qcell::QCell;
 pub use crate::qcell::QCellOwner;
 pub use crate::qcell::QCellOwnerID;
-pub use crate::tcell::TCell;
-pub use crate::tcell::TCellOwner;
-pub use crate::tlcell::TLCell;
-pub use crate::tlcell::TLCellOwner;
+
+#[cfg(feature = "std")]
+pub use crate::{tcell::TCell, tcell::TCellOwner, tlcell::TLCell, tlcell::TLCellOwner};
 
 // The compile-tests double-check that the compile_fail tests in the
 // doctests actually fail for the reason intended, not for some other
@@ -394,7 +412,14 @@ pub mod compiletest {
     #[test]
     fn ui() {
         let t = trybuild::TestCases::new();
-        t.compile_fail("src/compiletest/*.rs");
+        if cfg!(feature = "std") {
+            t.compile_fail("src/compiletest/*.rs");
+        } else if cfg!(feature = "alloc") {
+            t.compile_fail("src/compiletest/lcell-*.rs");
+            t.compile_fail("src/compiletest/qcell-*.rs");
+        } else {
+            t.compile_fail("src/compiletest/lcell-*.rs");
+        }
     }
 }
 

@@ -1,5 +1,5 @@
-use std::cell::UnsafeCell;
-use std::marker::PhantomData;
+use core::cell::UnsafeCell;
+use core::marker::PhantomData;
 
 use super::Invariant;
 type Id<'id> = PhantomData<Invariant<&'id ()>>;
