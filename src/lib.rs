@@ -387,6 +387,7 @@ pub use crate::lcell::LCellOwner;
 pub use crate::qcell::QCell;
 pub use crate::qcell::QCellOwner;
 pub use crate::qcell::QCellOwnerID;
+pub use crate::qcell::QCellOwnerPinned;
 
 #[cfg(feature = "std")]
 pub use crate::{tcell::TCell, tcell::TCellOwner, tlcell::TLCell, tlcell::TLCellOwner};

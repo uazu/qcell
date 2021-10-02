@@ -1,4 +1,6 @@
 use core::cell::UnsafeCell;
+use core::marker::PhantomPinned;
+use core::pin::Pin;
 use core::sync::atomic::{AtomicUsize, Ordering};
 
 #[cfg(feature = "alloc")]
@@ -287,6 +289,195 @@ impl<T: ?Sized> QCell<T> {
     #[inline]
     pub fn rw<'a>(&'a self, owner: &'a mut QCellOwner) -> &'a mut T {
         owner.rw(self)
+    }
+}
+
+/// Borrowing-owner of zero or more [`QCell`](struct.QCell.html)
+/// instances.
+///
+/// This type uses it's memory address to provide a unique owner ID.
+/// To ensure it's memory address cannot change while cells exist
+/// that are owned by it, it requires itself to be pinned before any
+/// operation interacting with the ID is attempted.
+///
+/// The following example uses `Box::pin`, however there are ways to
+/// safely pin a value without allocation, such as
+/// `pin-utils::pin_mut!`, `tokio::pin!`, or the `pin-project` crate.
+/// ```
+///# use qcell::{QCell, QCellOwnerPinned};
+///# use std::rc::Rc;
+/// let mut owner = Box::pin(QCellOwnerPinned);
+/// let item = Rc::new(owner.cell(Vec::<u8>::new()));
+/// owner.rw(&item).push(1);
+/// test(owner, &item);
+///
+/// fn test(owner: Pin<&mut QCellOwnerPinned>, item: &Rc<QCell<Vec<u8>>>) {
+///     owner.rw(&item).push(2);
+/// }
+/// ```
+pub struct QCellOwnerPinned {
+    target: OwnerIDTarget,
+    // ensure this type is !Unpin
+    _marker: PhantomPinned,
+}
+
+impl Default for QCellOwnerPinned {
+    fn default() -> Self {
+        QCellOwnerPinned::new()
+    }
+}
+
+impl QCellOwnerPinned {
+    /// Create an owner that can be used for creating many `QCell`
+    /// instances.  After this value is pinned it will have a temporally
+    /// unique ID associated with it to detect using the wrong owner to
+    /// access a cell at runtime, which is a programming error.
+    ///
+    /// Given the safety contract of Pin, this safe version does
+    /// successfully defend against all malicious and unsafe use, as far
+    /// as I am aware.  If not, please raise an issue.  The same unique
+    /// ID may later be allocated to someone else once you drop the
+    /// returned owner, but this cannot be abused to cause unsafe access
+    /// to cells because there will still be only one owner active at
+    /// any one time with that ID.  Also it cannot be used maliciously
+    /// to access cells which don't belong to the new caller, because
+    /// you also need a reference to the cells.  So for example if you
+    /// have a graph of cells that is only accessible through a
+    /// private structure, then someone else getting the same owner ID
+    /// makes no difference, because they have no way to get a
+    /// reference to those cells.  In any case, you are probably going
+    /// to drop all those cells at the same time as dropping the
+    /// owner, because they are no longer of any use without the owner
+    /// ID.
+    pub fn new() -> Self {
+        Self {
+            target: MAGIC_OWNER_ID_TARGET,
+            _marker: PhantomPinned,
+        }
+    }
+
+    fn raw_id(self: Pin<&Self>) -> OwnerID {
+        // Pin guarentees that our address will not change until we are
+        // dropped, so we can use it as a unique ID.
+        let raw_ptr: *const OwnerIDTarget = &self.target;
+        raw_ptr as usize
+    }
+
+    /// Get the internal owner ID.  This may be used to create `QCell`
+    /// instances without needing a borrow on this structure, which is
+    /// useful if this structure is already borrowed.
+    ///
+    /// Requires this owner to be pinned before use.
+    pub fn id(self: Pin<&Self>) -> QCellOwnerID {
+        let id = self.raw_id();
+        QCellOwnerID { id }
+    }
+
+    /// Create a new cell owned by this owner instance.
+    ///
+    /// Requires this owner to be pinned before use.
+    pub fn cell<T>(self: Pin<&Self>, value: T) -> QCell<T> {
+        QCellOwnerID { id: self.raw_id() }.cell(value)
+    }
+
+    /// Borrow contents of a `QCell` immutably (read-only).  Many
+    /// `QCell` instances can be borrowed immutably at the same time
+    /// from the same owner.  Panics if the `QCell` is not owned by
+    /// this `QCellOwnerPinned`.
+    ///
+    /// Requires this owner to be pinned before use.
+    pub fn ro<'a, T: ?Sized>(self: Pin<&'a Self>, qc: &'a QCell<T>) -> &'a T {
+        assert_eq!(
+            qc.owner,
+            self.raw_id(),
+            "QCell accessed with incorrect owner"
+        );
+        unsafe { &*qc.value.get() }
+    }
+
+    /// Borrow contents of a `QCell` mutably (read-write).  Only one
+    /// `QCell` at a time can be borrowed from the owner using this
+    /// call.  The returned reference must go out of scope before
+    /// another can be borrowed.  Panics if the `QCell` is not owned
+    /// by this `QCellOwnerPinned`.
+    ///
+    /// Requires this owner to be pinned before use.
+    #[allow(clippy::mut_from_ref)]
+    pub fn rw<'a, T: ?Sized>(self: Pin<&'a mut Self>, qc: &'a QCell<T>) -> &'a mut T {
+        assert_eq!(
+            qc.owner,
+            self.as_ref().id().id,
+            "QCell accessed with incorrect owner"
+        );
+        unsafe { &mut *qc.value.get() }
+    }
+
+    /// Borrow contents of two `QCell` instances mutably.  Panics if
+    /// the two `QCell` instances point to the same memory.  Panics if
+    /// either `QCell` is not owned by this `QCellOwnerPinned`.
+    ///
+    /// Requires this owner to be pinned before use.
+    pub fn rw2<'a, T: ?Sized, U: ?Sized>(
+        self: Pin<&'a mut Self>,
+        qc1: &'a QCell<T>,
+        qc2: &'a QCell<U>,
+    ) -> (&'a mut T, &'a mut U) {
+        assert_eq!(
+            qc1.owner,
+            self.as_ref().id().id,
+            "QCell accessed with incorrect owner"
+        );
+        assert_eq!(
+            qc2.owner,
+            self.as_ref().id().id,
+            "QCell accessed with incorrect owner"
+        );
+        assert_ne!(
+            qc1 as *const _ as *const () as usize, qc2 as *const _ as *const () as usize,
+            "Illegal to borrow same QCell twice with rw2()"
+        );
+        unsafe { (&mut *qc1.value.get(), &mut *qc2.value.get()) }
+    }
+
+    /// Borrow contents of three `QCell` instances mutably.  Panics if
+    /// any pair of `QCell` instances point to the same memory.
+    /// Panics if any `QCell` is not owned by this `QCellOwnerPinned`.
+    ///
+    /// Requires this owner to be pinned before use.
+    pub fn rw3<'a, T: ?Sized, U: ?Sized, V: ?Sized>(
+        self: Pin<&'a mut Self>,
+        qc1: &'a QCell<T>,
+        qc2: &'a QCell<U>,
+        qc3: &'a QCell<V>,
+    ) -> (&'a mut T, &'a mut U, &'a mut V) {
+        assert_eq!(
+            qc1.owner,
+            self.as_ref().id().id,
+            "QCell accessed with incorrect owner"
+        );
+        assert_eq!(
+            qc2.owner,
+            self.as_ref().id().id,
+            "QCell accessed with incorrect owner"
+        );
+        assert_eq!(
+            qc3.owner,
+            self.as_ref().id().id,
+            "QCell accessed with incorrect owner"
+        );
+        assert!(
+            (qc1 as *const _ as *const () as usize != qc2 as *const _ as *const () as usize)
+                && (qc2 as *const _ as *const () as usize != qc3 as *const _ as *const () as usize)
+                && (qc3 as *const _ as *const () as usize != qc1 as *const _ as *const () as usize),
+            "Illegal to borrow same QCell twice with rw3()"
+        );
+        unsafe {
+            (
+                &mut *qc1.value.get(),
+                &mut *qc2.value.get(),
+                &mut *qc3.value.get(),
+            )
+        }
     }
 }
 

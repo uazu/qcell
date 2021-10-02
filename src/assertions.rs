@@ -6,7 +6,7 @@ use std::panic::RefUnwindSafe;
 use std::panic::UnwindSafe;
 use std::rc::Rc;
 
-use crate::{LCell, LCellOwner, QCell, QCellOwner};
+use crate::{LCell, LCellOwner, QCell, QCellOwner, QCellOwnerPinned};
 
 #[cfg(feature = "std")]
 use crate::{TCell, TCellOwner, TLCell, TLCellOwner};
@@ -22,6 +22,8 @@ struct Q;
 // Check owners
 assert_impl_all!(LCellOwner<'_>: Send, Sync, Unpin, UnwindSafe, RefUnwindSafe);
 assert_impl_all!(QCellOwner: Send, Sync, Unpin, UnwindSafe, RefUnwindSafe);
+assert_impl_all!(QCellOwnerPinned: Send, Sync, UnwindSafe, RefUnwindSafe);
+assert_not_impl_any!(QCellOwnerPinned: Unpin);
 #[cfg(feature = "std")]
 assert_impl_all!(TCellOwner<Q>: Send, Sync, Unpin, UnwindSafe, RefUnwindSafe);
 #[cfg(feature = "std")]
