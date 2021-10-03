@@ -32,6 +32,10 @@ impl QCellOwner {
     where
         ValueOf<N>: LessThan256,
     {
+        assert!(
+            qcells.iter().all(|qc| qc.owner == self.id),
+            "QCell accessed with incorrect owner"
+        );
         assert_array_unique(&qcells);
         qcells.map(|qc| unsafe { &mut *qc.value.get() })
     }
@@ -112,7 +116,7 @@ fn assert_array_unique_sort<C: ?Sized, const N: usize>(array: &[&C; N])
 where
     ValueOf<N>: LessThan256,
 {
-    use std::convert::TryInto;
+    use core::convert::TryInto;
     let mut indecies = [0_u8; N];
     // N fits in a u8, asserted by the where clause, so this unwrap
     // should get optimized out
