@@ -18,6 +18,7 @@ categories = [ "data-structures", "memory-management", "rust-patterns" ]
 default = ["std"]
 std = ["alloc", "once_cell"]
 alloc = []
+const_generics = []
 
 [dependencies]
 once_cell = { version = "1.4.0", optional = true }

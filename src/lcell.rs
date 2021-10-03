@@ -133,7 +133,7 @@ impl<'id> LCellOwner<'id> {
 /// [`LCellOwner`]: struct.LCellOwner.html
 pub struct LCell<'id, T: ?Sized> {
     _id: Id<'id>,
-    value: UnsafeCell<T>,
+    pub(crate) value: UnsafeCell<T>,
 }
 
 impl<'id, T> LCell<'id, T> {

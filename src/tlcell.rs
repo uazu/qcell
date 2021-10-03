@@ -150,7 +150,7 @@ pub struct TLCell<Q, T: ?Sized> {
     // can give access to this TLCell's contents now.
     //
     // `UnsafeCell` already disables `Sync` and gives the right `Send` implementation.
-    value: UnsafeCell<T>,
+    pub(crate) value: UnsafeCell<T>,
 }
 
 impl<Q, T> TLCell<Q, T> {

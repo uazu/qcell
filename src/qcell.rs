@@ -236,7 +236,7 @@ impl QCellOwner {
 /// [`QCellOwner`]: struct.QCellOwner.html
 pub struct QCell<T: ?Sized> {
     owner: OwnerID,
-    value: UnsafeCell<T>,
+    pub(crate) value: UnsafeCell<T>,
 }
 
 // QCell already automatically implements Send, but not Sync.

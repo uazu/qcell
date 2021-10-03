@@ -352,6 +352,8 @@ mod qcell;
 mod tcell;
 #[cfg(feature = "std")]
 mod tlcell;
+#[cfg(feature = "std")]
+mod const_generics;
 
 pub mod doctest_lcell;
 #[cfg(feature = "alloc")]
