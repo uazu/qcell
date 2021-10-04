@@ -306,10 +306,11 @@ impl<T: ?Sized> QCell<T> {
 /// ```
 ///# use qcell::{QCell, QCellOwnerPinned};
 ///# use std::rc::Rc;
-/// let mut owner = Box::pin(QCellOwnerPinned);
-/// let item = Rc::new(owner.cell(Vec::<u8>::new()));
-/// owner.rw(&item).push(1);
-/// test(owner, &item);
+///# use std::pin::Pin;
+/// let mut owner = Box::pin(QCellOwnerPinned::new());
+/// let item = Rc::new(owner.as_ref().cell(Vec::<u8>::new()));
+/// owner.as_mut().rw(&item).push(1);
+/// test(owner.as_mut(), &item);
 ///
 /// fn test(owner: Pin<&mut QCellOwnerPinned>, item: &Rc<QCell<Vec<u8>>>) {
 ///     owner.rw(&item).push(2);
