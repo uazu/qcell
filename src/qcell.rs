@@ -54,7 +54,7 @@ impl QCellOwnerID {
 pub struct QCellOwner {
     #[cfg(feature = "alloc")]
     _handle: Option<Box<OwnerIDTarget>>,
-    id: OwnerID,
+    pub(crate) id: OwnerID,
 }
 
 // Used to generate a unique QCellOwnerID number for each QCellOwner
@@ -235,8 +235,8 @@ impl QCellOwner {
 ///
 /// [`QCellOwner`]: struct.QCellOwner.html
 pub struct QCell<T: ?Sized> {
-    owner: OwnerID,
-    value: UnsafeCell<T>,
+    pub(crate) owner: OwnerID,
+    pub(crate) value: UnsafeCell<T>,
 }
 
 // QCell already automatically implements Send, but not Sync.

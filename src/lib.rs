@@ -346,6 +346,8 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
+#[cfg(feature = "const_generics")]
+mod const_generics;
 mod lcell;
 mod qcell;
 #[cfg(feature = "std")]

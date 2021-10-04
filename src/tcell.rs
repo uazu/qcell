@@ -187,7 +187,7 @@ pub struct TCell<Q, T: ?Sized> {
     //
     // `UnsafeCell` disables `Sync` and already gives the right `Send` implementation.
     // `Sync` is re-enabled below under certain conditions.
-    value: UnsafeCell<T>,
+    pub(crate) value: UnsafeCell<T>,
 }
 
 impl<Q, T> TCell<Q, T> {
