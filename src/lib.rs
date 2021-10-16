@@ -354,6 +354,7 @@ mod tcell;
 mod tlcell;
 
 pub mod doctest_lcell;
+pub mod doctest_qcell_noalloc;
 #[cfg(feature = "alloc")]
 pub mod doctest_qcell;
 #[cfg(feature = "std")]
