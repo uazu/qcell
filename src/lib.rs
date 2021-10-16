@@ -354,9 +354,9 @@ mod tcell;
 mod tlcell;
 
 pub mod doctest_lcell;
-pub mod doctest_qcell_noalloc;
 #[cfg(feature = "alloc")]
 pub mod doctest_qcell;
+pub mod doctest_qcell_noalloc;
 #[cfg(feature = "std")]
 pub mod doctest_tcell;
 #[cfg(feature = "std")]
@@ -418,9 +418,11 @@ pub mod compiletest {
             t.compile_fail("src/compiletest/*.rs");
         } else if cfg!(feature = "alloc") {
             t.compile_fail("src/compiletest/lcell-*.rs");
+            t.compile_fail("src/compiletest/qcell_noalloc-*.rs");
             t.compile_fail("src/compiletest/qcell-*.rs");
         } else {
             t.compile_fail("src/compiletest/lcell-*.rs");
+            t.compile_fail("src/compiletest/qcell_noalloc-*.rs");
         }
     }
 }
