@@ -356,6 +356,7 @@ mod tlcell;
 pub mod doctest_lcell;
 #[cfg(feature = "alloc")]
 pub mod doctest_qcell;
+pub mod doctest_qcell_noalloc;
 #[cfg(feature = "std")]
 pub mod doctest_tcell;
 #[cfg(feature = "std")]
@@ -387,6 +388,7 @@ pub use crate::lcell::LCellOwner;
 pub use crate::qcell::QCell;
 pub use crate::qcell::QCellOwner;
 pub use crate::qcell::QCellOwnerID;
+pub use crate::qcell::QCellOwnerPinned;
 
 #[cfg(feature = "std")]
 pub use crate::{tcell::TCell, tcell::TCellOwner, tlcell::TLCell, tlcell::TLCellOwner};
@@ -416,9 +418,11 @@ pub mod compiletest {
             t.compile_fail("src/compiletest/*.rs");
         } else if cfg!(feature = "alloc") {
             t.compile_fail("src/compiletest/lcell-*.rs");
+            t.compile_fail("src/compiletest/qcell_noalloc-*.rs");
             t.compile_fail("src/compiletest/qcell-*.rs");
         } else {
             t.compile_fail("src/compiletest/lcell-*.rs");
+            t.compile_fail("src/compiletest/qcell_noalloc-*.rs");
         }
     }
 }
