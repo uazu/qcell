@@ -364,7 +364,7 @@ impl QCellOwnerPinned {
     }
 
     fn raw_id(self: Pin<&Self>) -> OwnerID {
-        // Pin guarentees that our address will not change until we are
+        // Pin guarantees that our address will not change until we are
         // dropped, so we can use it as a unique ID.
         let raw_ptr: *const OwnerIDTarget = &self.target;
         raw_ptr as usize
