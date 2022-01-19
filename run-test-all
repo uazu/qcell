@@ -1,0 +1,5 @@
+#!/bin/bash
+
+cargo test &&
+cargo test --no-default-features --features alloc &&
+cargo test --no-default-features

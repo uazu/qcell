@@ -5,7 +5,7 @@ fn main() {
     use qcell::{TCell, TCellOwner};
     type MarkerA = fn(&());
     type MarkerB = fn(&'static ());
-
+   
     let mut owner1 = TCellOwner::<MarkerA>::new() as TCellOwner<MarkerB>;  // Compile fail
     let mut owner2 = TCellOwner::<MarkerB>::new();
     let cell = TCell::<MarkerB, u32>::new(1234);

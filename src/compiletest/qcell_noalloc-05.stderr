@@ -1,0 +1,14 @@
+error[E0599]: the method `clone` exists for struct `Pin<&mut QCellOwnerPinned>`, but its trait bounds were not satisfied
+   --> src/compiletest/qcell_noalloc-05.rs:10:25
+    |
+10  |     let owner2 = owner1.clone();  // Compile fail
+    |                         ^^^^^ method cannot be called on `Pin<&mut QCellOwnerPinned>` due to unsatisfied trait bounds
+    |
+   ::: $RUST/core/src/pin.rs
+    |
+    | pub struct Pin<P> {
+    | ----------------- doesn't satisfy `Pin<&mut QCellOwnerPinned>: Clone`
+    |
+    = note: the following trait bounds were not satisfied:
+            `&mut QCellOwnerPinned: Clone`
+            which is required by `Pin<&mut QCellOwnerPinned>: Clone`

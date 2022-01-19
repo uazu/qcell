@@ -1,10 +1,13 @@
 error[E0277]: `Cell<i32>` cannot be shared between threads safely
- --> $DIR/tcell-11.rs:9:5
+ --> src/compiletest/tcell-11.rs:9:5
   |
-8 |     fn is_sync<T: Sync>() {}
-  |                   ---- required by this bound in `is_sync`
 9 |     is_sync::<TCell<Marker, Cell<i32>>>();  // Compile fail
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `Cell<i32>` cannot be shared between threads safely
   |
   = help: the trait `Sync` is not implemented for `Cell<i32>`
   = note: required because of the requirements on the impl of `Sync` for `TCell<Marker, Cell<i32>>`
+note: required by a bound in `is_sync`
+ --> src/compiletest/tcell-11.rs:8:19
+  |
+8 |     fn is_sync<T: Sync>() {}
+  |                   ^^^^ required by this bound in `is_sync`

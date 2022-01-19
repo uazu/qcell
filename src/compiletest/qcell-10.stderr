@@ -1,15 +1,15 @@
 error[E0277]: `Cell<i32>` cannot be shared between threads safely
-   --> $DIR/qcell-10.rs:11:5
+   --> src/compiletest/qcell-10.rs:11:5
     |
 11  |     std::thread::spawn(|| owner.ro(&cell).set(200));  // Compile fail
     |     ^^^^^^^^^^^^^^^^^^ `Cell<i32>` cannot be shared between threads safely
-    |
-   ::: $RUST/std/src/thread/mod.rs
-    |
-    |     F: Send + 'static,
-    |        ---- required by this bound in `spawn`
     |
     = help: the trait `Sync` is not implemented for `Cell<i32>`
     = note: required because of the requirements on the impl of `Sync` for `QCell<Cell<i32>>`
     = note: required because of the requirements on the impl of `Send` for `&QCell<Cell<i32>>`
     = note: required because it appears within the type `[closure@$DIR/src/compiletest/qcell-10.rs:11:24: 11:51]`
+note: required by a bound in `spawn`
+   --> $RUST/std/src/thread/mod.rs
+    |
+    |     F: Send + 'static,
+    |        ^^^^ required by this bound in `spawn`

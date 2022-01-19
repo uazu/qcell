@@ -1,0 +1,5 @@
+#!/bin/bash
+
+cargo clippy &&
+cargo clippy --no-default-features --features alloc &&
+cargo clippy --no-default-features

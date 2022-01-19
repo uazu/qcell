@@ -1,11 +1,11 @@
 error[E0495]: cannot infer an appropriate lifetime for lifetime parameter `'id` due to conflicting requirements
-  --> $DIR/lcell-03.rs:9:37
+  --> src/compiletest/lcell-03.rs:9:37
    |
 9  |             let c1 = Rc::new(owner1.cell(100u32));
    |                                     ^^^^
    |
-note: first, the lifetime cannot outlive the anonymous lifetime #1 defined on the body at 8:27...
-  --> $DIR/lcell-03.rs:8:27
+note: first, the lifetime cannot outlive the anonymous lifetime #1 defined here...
+  --> src/compiletest/lcell-03.rs:8:27
    |
 8  |           LCellOwner::scope(|mut owner2| {
    |  ___________________________^
@@ -15,14 +15,14 @@ note: first, the lifetime cannot outlive the anonymous lifetime #1 defined on th
 12 | |         });
    | |_________^
 note: ...so that the types are compatible
-  --> $DIR/lcell-03.rs:10:36
+  --> src/compiletest/lcell-03.rs:10:36
    |
 10 |             let c1mutref2 = owner2.rw(&c1);    // Compile error
    |                                    ^^
    = note: expected `&mut LCellOwner<'_>`
               found `&mut LCellOwner<'_>`
-note: but, the lifetime must be valid for the anonymous lifetime #1 defined on the body at 7:23...
-  --> $DIR/lcell-03.rs:7:23
+note: but, the lifetime must be valid for the anonymous lifetime #1 defined here...
+  --> src/compiletest/lcell-03.rs:7:23
    |
 7  |       LCellOwner::scope(|mut owner1| {
    |  _______________________^
@@ -34,7 +34,7 @@ note: but, the lifetime must be valid for the anonymous lifetime #1 defined on t
 13 | |     });
    | |_____^
 note: ...so that the types are compatible
-  --> $DIR/lcell-03.rs:9:37
+  --> src/compiletest/lcell-03.rs:9:37
    |
 9  |             let c1 = Rc::new(owner1.cell(100u32));
    |                                     ^^^^

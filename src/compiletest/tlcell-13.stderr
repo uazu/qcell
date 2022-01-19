@@ -1,5 +1,5 @@
 error[E0277]: `*const ()` cannot be sent between threads safely
-   --> $DIR/tlcell-13.rs:12:5
+   --> src/compiletest/tlcell-13.rs:12:5
     |
 12  |       std::thread::spawn(move || {
     |  _____^^^^^^^^^^^^^^^^^^_-
@@ -9,13 +9,13 @@ error[E0277]: `*const ()` cannot be sent between threads safely
 14  | |     }).join();
     | |_____- within this `[closure@$DIR/src/compiletest/tlcell-13.rs:12:24: 14:6]`
     |
-   ::: $RUST/std/src/thread/mod.rs
-    |
-    |       F: Send + 'static,
-    |          ---- required by this bound in `spawn`
-    |
     = help: within `[closure@$DIR/src/compiletest/tlcell-13.rs:12:24: 14:6]`, the trait `Send` is not implemented for `*const ()`
     = note: required because it appears within the type `qcell::tlcell::NotSendOrSync`
     = note: required because it appears within the type `PhantomData<qcell::tlcell::NotSendOrSync>`
     = note: required because it appears within the type `TLCellOwner<Marker>`
     = note: required because it appears within the type `[closure@$DIR/src/compiletest/tlcell-13.rs:12:24: 14:6]`
+note: required by a bound in `spawn`
+   --> $RUST/std/src/thread/mod.rs
+    |
+    |     F: Send + 'static,
+    |        ^^^^ required by this bound in `spawn`

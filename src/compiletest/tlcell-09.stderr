@@ -1,8 +1,8 @@
 error[E0502]: cannot borrow `owner` as immutable because it is also borrowed as mutable
-  --> $DIR/tlcell-09.rs:17:10
+  --> src/compiletest/tlcell-09.rs:17:10
    |
 16 |     let c1mutref = owner.rw(&c1);
-   |                    ----- mutable borrow occurs here
+   |                    ------------- mutable borrow occurs here
 17 |     test(&owner);    // Compile error
    |          ^^^^^^ immutable borrow occurs here
 18 |     *c1mutref += 1;

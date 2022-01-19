@@ -1,0 +1,11 @@
+error[E0382]: use of moved value: `owner1`
+  --> src/compiletest/qcell_noalloc-02.rs:10:5
+   |
+8  |     let mut owner1 = QCellOwnerPinned::new();
+   |         ---------- move occurs because `owner1` has type `QCellOwnerPinned`, which does not implement the `Copy` trait
+9  |     let mut owner2 = owner1;
+   |                      ------ value moved here
+10 |     pin_mut!(owner1);  // Compile fail
+   |     ^^^^^^^^^^^^^^^^ value used here after move
+   |
+   = note: this error originates in the macro `pin_mut` (in Nightly builds, run with -Z macro-backtrace for more info)

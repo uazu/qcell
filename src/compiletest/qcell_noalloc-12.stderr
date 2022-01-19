@@ -1,0 +1,25 @@
+error[E0505]: cannot move out of `owner` because it is borrowed
+  --> src/compiletest/qcell_noalloc-12.rs:9:24
+   |
+8  |     let val_ref = owner.as_ref().ro(&cell);
+   |                   -------------- borrow of `owner` occurs here
+9  |     std::thread::spawn(move || {
+   |                        ^^^^^^^ move out of `owner` occurs here
+10 |         assert_eq!(*owner.as_ref().ro(&cell), 100);
+   |                     ----- move occurs due to use in closure
+11 |     }).join();
+12 |     assert_eq!(*val_ref, 100);
+   |     ------------------------- borrow later used here
+
+error[E0505]: cannot move out of `cell` because it is borrowed
+  --> src/compiletest/qcell_noalloc-12.rs:9:24
+   |
+8  |     let val_ref = owner.as_ref().ro(&cell);
+   |                                     ----- borrow of `cell` occurs here
+9  |     std::thread::spawn(move || {
+   |                        ^^^^^^^ move out of `cell` occurs here
+10 |         assert_eq!(*owner.as_ref().ro(&cell), 100);
+   |                                        ---- move occurs due to use in closure
+11 |     }).join();
+12 |     assert_eq!(*val_ref, 100);
+   |     ------------------------- borrow later used here
