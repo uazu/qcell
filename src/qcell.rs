@@ -324,20 +324,20 @@ static FAST_QCELLOWNER_ID: AtomicUsize = AtomicUsize::new(1);
 /// The owner will have a unique(-ish) ID associated with it to detect
 /// use of the wrong owner to access a cell at runtime, which is a
 /// programming error.  This type allocates the owner ID from a
-/// sequence sourced from a global atomic variable, so it is very fast
-/// to allocate.
+/// wrapping sequence sourced from a global atomic variable, so it is
+/// very fast to allocate.
 ///
 /// # Safety
 ///
 /// A malicious coder could cause an intentional ID collision, e.g. by
-/// creating 2^31 or 2^63 owners, which would cause the ID to wrap.
-/// This would allow that coder to cause undefined behaviour in their
-/// own code.  So at a stretch this could allow a coder to hide
-/// unsound code from a safety review.  Because of that the
-/// [`QCellOwnerSeq::new`] method is marked as `unsafe`.  However it
-/// is not possible to use it unsafely by accident, only through
-/// making a intentional, determined and CPU-intensive effort to
-/// exploit it.
+/// creating 2^63 owners on a 64-bit build (or 2^31 on 32-bit, etc),
+/// which would cause the ID to wrap.  This would allow that coder to
+/// cause undefined behaviour in their own code.  So at a stretch this
+/// could allow a coder to hide unsound code from a safety review.
+/// Because of that the [`QCellOwnerSeq::new`] method is marked as
+/// `unsafe`.  However it is not possible to use it unsafely by
+/// accident, only through making an intentional, determined and
+/// CPU-intensive effort to exploit it.
 ///
 /// See [crate documentation](index.html).
 pub struct QCellOwnerSeq {
@@ -355,24 +355,24 @@ impl QCellOwnerSeq {
     /// The contract with the caller is that the caller must not
     /// intentionally create an owner-ID collision and exploit it to
     /// create undefined behaviour.  The caller could do this by
-    /// creating 2^31 or 2^63 more owners, causing the ID to wrap, and
-    /// then using two owners that they know to have the same ID to
-    /// access the same memory mutably from two references at the same
-    /// time.  This is totally impossible to do by accident, so any
-    /// normal use of this call will be 100% safe.
+    /// creating 2^63 more owners on a 64-bit build (or 2^31 on
+    /// 32-bit, etc), causing the ID to wrap, and then using two
+    /// owners that they know to have the same ID to access the same
+    /// memory mutably from two references at the same time.  This is
+    /// totally impossible to do by accident, so any normal use of
+    /// this call will be 100% safe.
     ///
     /// To get unsound behaviour requires both an owner ID collision
     /// (which might just about happen by accident in very unusual
     /// situations), and then also intentionally using the wrong owner
     /// to access a cell.  Usually using the wrong owner to access a
     /// cell would cause an immediate panic because it is a
-    /// programming error, and it is extremely unlikely that there
-    /// would always be the same ID collision in testing, since there
-    /// are 2^31 or 2^63 IDs.  So this panic would soon be fixed.
-    /// Once it is fixed, there is absolutely no way that even an
-    /// accidental collision could cause any unsound behaviour,
-    /// because the bug has been eliminated, and the correct owner is
-    /// always used to access each cell.
+    /// programming error.  It is extremely unlikely that there would
+    /// always be the same ID collision in testing, so this panic
+    /// would soon be fixed.  Once it is fixed, there is absolutely no
+    /// way that even an accidental collision could cause any unsound
+    /// behaviour, because the bug has been eliminated, and the
+    /// correct owner is always used to access each cell.
     #[inline]
     pub unsafe fn new() -> Self {
         // Must increment by 2 to ensure we never collide with an ID
