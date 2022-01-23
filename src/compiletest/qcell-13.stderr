@@ -1,5 +1,5 @@
 error[E0277]: `Rc<i32>` cannot be sent between threads safely
-   --> $DIR/qcell-13.rs:11:5
+   --> src/compiletest/qcell-13.rs:11:5
     |
 11  |       std::thread::spawn(move || {    // Compile fail
     |  _____^^^^^^^^^^^^^^^^^^_-
@@ -9,12 +9,12 @@ error[E0277]: `Rc<i32>` cannot be sent between threads safely
 13  | |     }).join();
     | |_____- within this `[closure@$DIR/src/compiletest/qcell-13.rs:11:24: 13:6]`
     |
-   ::: $RUST/std/src/thread/mod.rs
-    |
-    |       F: Send + 'static,
-    |          ---- required by this bound in `spawn`
-    |
     = help: within `[closure@$DIR/src/compiletest/qcell-13.rs:11:24: 13:6]`, the trait `Send` is not implemented for `Rc<i32>`
     = note: required because it appears within the type `UnsafeCell<Rc<i32>>`
     = note: required because it appears within the type `QCell<Rc<i32>>`
     = note: required because it appears within the type `[closure@$DIR/src/compiletest/qcell-13.rs:11:24: 13:6]`
+note: required by a bound in `spawn`
+   --> $RUST/std/src/thread/mod.rs
+    |
+    |     F: Send + 'static,
+    |        ^^^^ required by this bound in `spawn`

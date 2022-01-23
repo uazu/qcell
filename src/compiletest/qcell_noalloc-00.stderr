@@ -1,0 +1,15 @@
+error[E0599]: no method named `id` found for struct `QCellOwnerPinned` in the current scope
+   --> src/compiletest/qcell_noalloc-00.rs:7:21
+    |
+7   |     let id = owner1.id();
+    |                     ^^ method not found in `QCellOwnerPinned`
+    |
+   ::: src/qcell.rs:600:12
+    |
+600 |     pub fn id(self: Pin<&Self>) -> QCellOwnerID {
+    |            -- the method is available for `Pin<&QCellOwnerPinned>` here
+    |
+help: consider wrapping the receiver expression with the appropriate type
+    |
+7   |     let id = Pin::new(&owner1).id();
+    |              ++++++++++      +

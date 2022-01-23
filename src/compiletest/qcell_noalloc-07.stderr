@@ -1,0 +1,9 @@
+error[E0502]: cannot borrow `owner` as mutable because it is also borrowed as immutable
+  --> src/compiletest/qcell_noalloc-07.rs:13:20
+   |
+12 |     let c1ref = owner.as_ref().ro(&c1);
+   |                 -------------- immutable borrow occurs here
+13 |     let c1mutref = owner.as_mut().rw(&c1);    // Compile error
+   |                    ^^^^^^^^^^^^^^ mutable borrow occurs here
+14 |     println!("{}", *c1ref);
+   |                    ------ immutable borrow later used here

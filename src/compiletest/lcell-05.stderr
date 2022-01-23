@@ -1,8 +1,8 @@
 error[E0502]: cannot borrow `owner` as mutable because it is also borrowed as immutable
-  --> $DIR/lcell-05.rs:11:24
+  --> src/compiletest/lcell-05.rs:11:24
    |
 10 |         let c1ref = owner.ro(&c1);
-   |                     ----- immutable borrow occurs here
+   |                     ------------- immutable borrow occurs here
 11 |         let c1mutref = owner.rw(&c1);    // Compile error
    |                        ^^^^^^^^^^^^^ mutable borrow occurs here
 12 |         println!("{}", *c1ref);

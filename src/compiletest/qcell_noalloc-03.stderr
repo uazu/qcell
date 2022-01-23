@@ -1,0 +1,9 @@
+error[E0382]: borrow of moved value: `owner1`
+  --> src/compiletest/qcell_noalloc-03.rs:11:22
+   |
+9  |     pin_mut!(owner1);
+   |     ---------------- move occurs because `owner1` has type `Pin<&mut QCellOwnerPinned>`, which does not implement the `Copy` trait
+10 |     let mut owner2 = owner1;
+   |                      ------ value moved here
+11 |     let rc = Rc::new(owner1.as_ref().cell(100u32));  // Compile fail
+   |                      ^^^^^^^^^^^^^^^ value borrowed here after move

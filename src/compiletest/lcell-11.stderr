@@ -1,10 +1,13 @@
 error[E0277]: `Cell<i32>` cannot be shared between threads safely
- --> $DIR/lcell-11.rs:8:5
+ --> src/compiletest/lcell-11.rs:8:5
   |
-7 |     fn is_sync<T: Sync>() {}
-  |                   ---- required by this bound in `is_sync`
 8 |     is_sync::<LCell<'_, Cell<i32>>>();  // Compile fail
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `Cell<i32>` cannot be shared between threads safely
   |
   = help: the trait `Sync` is not implemented for `Cell<i32>`
   = note: required because of the requirements on the impl of `Sync` for `LCell<'_, Cell<i32>>`
+note: required by a bound in `is_sync`
+ --> src/compiletest/lcell-11.rs:7:19
+  |
+7 |     fn is_sync<T: Sync>() {}
+  |                   ^^^^ required by this bound in `is_sync`

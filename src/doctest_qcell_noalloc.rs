@@ -1,7 +1,7 @@
 // Run ./update-compiletest-from-doctest.pl in crate base directory
 // after making any modification to compile_fail tests here.
 
-//! Tests for QCell functionality without `alloc` feature enabled.
+//! This tests the `QCell` implementation without the `alloc` feature.
 //!
 //! You should not be able to use QCellOwnerPinned without pinning it first
 //!
@@ -230,13 +230,12 @@
 //! *c1mutref += 1;
 //! ```
 //!
-//! `QCellOwner`, `QCellOwnerPinned`, and `QCell` should be both
+//! `QCellOwnerPinned` and `QCell` should be both
 //! `Send` and `Sync` by default:
 //!
 //! ```
-//!# use qcell::{QCellOwner, QCell, QCellOwnerPinned};
+//!# use qcell::{QCell, QCellOwnerPinned};
 //! fn is_send_sync<T: Send + Sync>() {}
-//! is_send_sync::<QCellOwner>();
 //! is_send_sync::<QCellOwnerPinned>();
 //! is_send_sync::<QCell<()>>();
 //! ```

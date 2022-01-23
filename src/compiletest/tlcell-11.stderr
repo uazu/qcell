@@ -1,8 +1,6 @@
 error[E0277]: `*const ()` cannot be shared between threads safely
- --> $DIR/tlcell-11.rs:8:5
+ --> src/compiletest/tlcell-11.rs:8:5
   |
-7 |     fn is_sync<T: Sync>() {}
-  |                   ---- required by this bound in `is_sync`
 8 |     is_sync::<TLCellOwner<Marker>>();  // Compile fail
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `*const ()` cannot be shared between threads safely
   |
@@ -10,3 +8,8 @@ error[E0277]: `*const ()` cannot be shared between threads safely
   = note: required because it appears within the type `qcell::tlcell::NotSendOrSync`
   = note: required because it appears within the type `PhantomData<qcell::tlcell::NotSendOrSync>`
   = note: required because it appears within the type `TLCellOwner<Marker>`
+note: required by a bound in `is_sync`
+ --> src/compiletest/tlcell-11.rs:7:19
+  |
+7 |     fn is_sync<T: Sync>() {}
+  |                   ^^^^ required by this bound in `is_sync`

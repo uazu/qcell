@@ -171,8 +171,8 @@
 //! [`RefCell`] pros and cons:
 //!
 //! - Pro: Simple
-//! - Pro: no_std support
 //! - Pro: Allows very flexible borrowing patterns
+//! - Pro: `no_std` support
 //! - Con: No compile-time borrowing checks
 //! - Con: Can panic due to distant code changes
 //! - Con: Runtime borrow checks and some cell space overhead
@@ -180,10 +180,10 @@
 //! [`QCell`] pros and cons:
 //!
 //! - Pro: Simple
-//! - Pro: no_std support
 //! - Pro: Compile-time borrowing checks
 //! - Pro: Dynamic owner creation, not limited in any way
 //! - Pro: No lifetime annotations or type parameters required
+//! - Pro: `no_std` support
 //! - Con: Can only borrow up to 3 objects at a time
 //! - Con: Runtime owner checks and some cell space overhead
 //!
@@ -197,7 +197,7 @@
 //! (TLCell), meaning only one owner is allowed per thread or process
 //! per marker type.  Code intended to be nested on the call stack
 //! must be parameterised with an external marker type.
-//! - Con: requires std
+//! - Con: Currently requires `std`
 //!
 //! [`LCell`] pros and cons:
 //!
@@ -205,7 +205,7 @@
 //! - Pro: No overhead at runtime for borrowing or ownership checks
 //! - Pro: No cell space overhead
 //! - Pro: No need for singletons, meaning that one use does not limit other nested uses
-//! - Pro: no_std support
+//! - Pro: `no_std` support
 //! - Con: Can only borrow up to 3 objects at a time
 //! - Con: Requires lifetime annotations on calls and structures
 //!
@@ -239,9 +239,9 @@
 //! Cell | Cell immutable borrow | Cell mutable borrow
 //! ---|---|---
 //! `RefCell` | `cell.borrow()` | `cell.borrow_mut()`
-//! `QCell` | `owner.ro(&cell)` | `owner.rw(&cell)`
-//! `TCell` or `TLCell` | `owner.ro(&cell)` | `owner.rw(&cell)`
-//! `LCell` | `owner.ro(&cell)` | `owner.rw(&cell)`
+//! `QCell` | `cell.ro(&owner)` or<br/>`owner.ro(&cell)` | `cell.rw(&mut owner)` or<br/>`owner.rw(&cell)`
+//! `TCell` or `TLCell` | `cell.ro(&owner)` or<br/>`owner.ro(&cell)` | `cell.rw(&mut owner)` or<br/>`owner.rw(&cell)`
+//! `LCell` | `cell.ro(&owner)` or<br/>`owner.ro(&cell)` | `cell.rw(&mut owner)` or<br/>`owner.rw(&cell)`
 //!
 //! # Multi-threaded use: Send and Sync
 //!
@@ -310,6 +310,19 @@
 //! you already have `&mut` on the `struct` containing the
 //! `QCellOwner`, then you get access to the `T` instances essentially
 //! for free.
+//!
+//! # `no_std` support
+//!
+//! There are three levels at which **qcell** crate can be built:
+//!
+//! - Full `std` support, which is the default
+//!
+//! - `no_std` with `alloc`, when built with `--no-default-features`
+//! and `--features alloc`
+//!
+//! - `no_std` without `alloc`, when built with `--no-default-features`
+//!
+//! Both [`QCell`] and [`LCell`] support all three levels.
 //!
 //! # Origin of names
 //!
@@ -386,9 +399,12 @@ struct Invariant<T>(fn(T) -> T);
 pub use crate::lcell::LCell;
 pub use crate::lcell::LCellOwner;
 pub use crate::qcell::QCell;
-pub use crate::qcell::QCellOwner;
 pub use crate::qcell::QCellOwnerID;
 pub use crate::qcell::QCellOwnerPinned;
+pub use crate::qcell::QCellOwnerSeq;
+
+#[cfg(feature = "alloc")]
+pub use crate::qcell::QCellOwner;
 
 #[cfg(feature = "std")]
 pub use crate::{tcell::TCell, tcell::TCellOwner, tlcell::TLCell, tlcell::TLCellOwner};
@@ -410,7 +426,7 @@ pub use crate::{tcell::TCell, tcell::TCellOwner, tlcell::TLCell, tlcell::TLCellO
 // all is okay, check in the changes.
 #[cfg(test)]
 pub mod compiletest {
-    #[rustversion::all(stable, since(1.55), before(1.56))]
+    #[rustversion::all(stable, since(1.58), before(1.59))]
     #[test]
     fn ui() {
         let t = trybuild::TestCases::new();

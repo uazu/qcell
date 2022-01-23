@@ -4,6 +4,30 @@ This project follows Rust semantic versioning.
 
 <!-- see keepachangelog.com for format ideas -->
 
+## 0.5.0
+
+### Changed
+
+- `QCellOwner` is now based on IDs derived from the addresses of
+  heap-allocated objects.  This change was contributed by [Violet
+  Leonard](https://github.com/geeklint).  This offloads maintaining
+  lists of in-use IDs to the allocator, which improves `no_std`
+  compatibility.
+
+### Added
+
+- `no_std` support in `QCell` and `LCell`, contributed by [Violet
+  Leonard](https://github.com/geeklint).
+
+- `QCellOwnerPinned` (contributed by [Violet
+  Leonard](https://github.com/geeklint)), and `QCellOwnerSeq`.  These
+  now form a family of ID-based owners along with `QCellOwner`.
+
+### Breaking
+
+- `QCellOwner::fast_new` is replaced by `QCellOwnerSeq::new`
+
+
 ## 0.4.3 (2021-09-20)
 
 ### Fixed
