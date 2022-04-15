@@ -375,6 +375,9 @@ pub mod doctest_tcell;
 #[cfg(feature = "std")]
 pub mod doctest_tlcell;
 
+#[cfg(feature = "generativity")]
+pub extern crate generativity;
+
 // Used in LCell, TCell and TLCell.  See the Rustonomicon chapters
 // "Subtyping and Variance"
 // (https://doc.rust-lang.org/nomicon/subtyping.html) and
