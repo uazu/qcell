@@ -1,8 +1,8 @@
 error[E0308]: mismatched types
-  --> $DIR/tcell-03.rs:17:31
+  --> src/compiletest/tlcell-03.rs:17:31
    |
 17 |     let c1mutref = owner_b.rw(&*c1);    // Compile error
    |                               ^^^^ expected struct `MarkerB`, found struct `MarkerA`
    |
-   = note: expected reference `&TCell<MarkerB, _>`
-              found reference `&TCell<MarkerA, u32>`
+   = note: expected reference `&TLCell<MarkerB, _>`
+              found reference `&TLCell<MarkerA, u32>`

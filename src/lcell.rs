@@ -8,17 +8,11 @@ type Id<'id> = PhantomData<Invariant<&'id ()>>;
 /// instances.
 ///
 /// Use `LCellOwner::scope(|owner| ...)` to create an instance of this
-/// type.
-///
-/// If the `generativity` feature is enabled, the
-/// [`generativity`](https://crates.io/crates/generativity) crate can be used to
-/// create a `Guard` for [`LCellOwner::new`]. This removes the requirment of
-/// accessing an `LCellOwner` only inside closures.
-///
-/// The key piece of Rust syntax that enables this is `for<'id>`.
-/// This allows creating an invariant lifetime within a closure, which
-/// is different to any other Rust lifetime thanks to the techniques
-/// explained in various places: section 6.3 of [this thesis from
+/// type.  The key piece of Rust syntax that enables this is
+/// `for<'id>`.  This allows creating an invariant lifetime within a
+/// closure, which is different to any other Rust lifetime thanks to
+/// the techniques explained in various places: section 6.3 of [this
+/// thesis from
 /// Gankro](https://raw.githubusercontent.com/Gankro/thesis/master/thesis.pdf),
 /// [this Reddit
 /// post](https://www.reddit.com/r/rust/comments/3oo0oe/sound_unchecked_indexing_with_lifetimebased_value/),
@@ -27,6 +21,14 @@ type Id<'id> = PhantomData<Invariant<&'id ()>>;
 /// Also see [this Reddit
 /// comment](https://www.reddit.com/r/rust/comments/3aahl1/outside_of_closures_what_are_some_other_uses_for/csavac5/)
 /// and its linked playground code.
+///
+/// Alternatively, if the **generativity** feature is enabled, the
+/// [`generativity`](https://crates.io/crates/generativity) crate can
+/// be used to create an owner as follows: `make_guard!(guard); let
+/// mut owner = LCellOwner::new(guard);`.  However note that the Rust
+/// compiler error messages may be more confusing with
+/// **generativity** if you make a mistake and use the wrong owner for
+/// a cell.
 ///
 /// Some history: `GhostCell` by
 /// [**pythonesque**](https://github.com/pythonesque) predates the

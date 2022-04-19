@@ -1,5 +1,5 @@
 error[E0382]: borrow of moved value: `owner1`
- --> $DIR/qcell-00.rs:9:33
+ --> src/compiletest/qcell-00.rs:9:33
   |
 7 |     let mut owner1 = QCellOwner::new();
   |         ---------- move occurs because `owner1` has type `QCellOwner`, which does not implement the `Copy` trait

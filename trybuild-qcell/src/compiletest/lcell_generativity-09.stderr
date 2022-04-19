@@ -1,0 +1,9 @@
+error[E0502]: cannot borrow `owner` as immutable because it is also borrowed as mutable
+  --> src/compiletest/lcell_generativity-09.rs:13:10
+   |
+12 |     let c1mutref = owner.rw(&c1);
+   |                    ------------- mutable borrow occurs here
+13 |     test(&owner);    // Compile error
+   |          ^^^^^^ immutable borrow occurs here
+14 |     *c1mutref += 1;
+   |     -------------- mutable borrow later used here

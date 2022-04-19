@@ -332,8 +332,10 @@
 //!
 //! # Unsafe code patterns blocked
 //!
-//! See the [`doctest_qcell`], [`doctest_tcell`], [`doctest_tlcell`]
-//! and [`doctest_lcell`] modules
+//! See the [`doctest_qcell`], [`doctest_tcell`], [`doctest_tlcell`],
+//! [`doctest_lcell`], [`doctest_qcell_noalloc`] and
+//! [`doctest_lcell_generativity`] modules, whose docs and doc-tests
+//! show which unsafe patterns are blocked.
 //!
 //! [`RefCell`]: https://doc.rust-lang.org/std/cell/struct.RefCell.html
 //! [`RwLock`]: https://doc.rust-lang.org/std/sync/struct.RwLock.html
@@ -346,9 +348,11 @@
 //! [`LCell`]: struct.LCell.html
 //! [`LCellOwner`]: struct.LCellOwner.html
 //! [`doctest_qcell`]: doctest_qcell/index.html
+//! [`doctest_qcell_noalloc`]: doctest_qcell_noalloc/index.html
 //! [`doctest_tcell`]: doctest_tcell/index.html
 //! [`doctest_tlcell`]: doctest_tlcell/index.html
 //! [`doctest_lcell`]: doctest_lcell/index.html
+//! [`doctest_lcell_generativity`]: doctest_lcell_generativity/index.html
 //! [**Migi**]: https://github.com/Migi
 //! [**pythonesque**]: https://github.com/pythonesque
 
@@ -367,6 +371,8 @@ mod tcell;
 mod tlcell;
 
 pub mod doctest_lcell;
+#[cfg(feature = "generativity")]
+pub mod doctest_lcell_generativity;
 #[cfg(feature = "alloc")]
 pub mod doctest_qcell;
 pub mod doctest_qcell_noalloc;
@@ -411,40 +417,6 @@ pub use crate::qcell::QCellOwner;
 
 #[cfg(feature = "std")]
 pub use crate::{tcell::TCell, tcell::TCellOwner, tlcell::TLCell, tlcell::TLCellOwner};
-
-// The compile-tests double-check that the compile_fail tests in the
-// doctests actually fail for the reason intended, not for some other
-// reason.  This is most useful to check when making changes to the
-// crate.  However since the compiler error messages may change from
-// one release to the next, the tests only remain valid for a certain
-// range of compiler versions.
-//
-// On upgrading the Rust version, with a clean git status, run
-// `TRYBUILD=overwrite cargo test` after updating the version number
-// below.  Then any error output that has changed will show up as
-// modified files under lib/compiletest.  Then check through those
-// manually to check that the failure is the same as before.  Mostly
-// the top line of the error message will be the same and there will
-// be changes in the formatting or hints provided by the compiler.  If
-// all is okay, check in the changes.
-#[cfg(test)]
-pub mod compiletest {
-    #[rustversion::all(stable, since(1.58), before(1.59))]
-    #[test]
-    fn ui() {
-        let t = trybuild::TestCases::new();
-        if cfg!(feature = "std") {
-            t.compile_fail("src/compiletest/*.rs");
-        } else if cfg!(feature = "alloc") {
-            t.compile_fail("src/compiletest/lcell-*.rs");
-            t.compile_fail("src/compiletest/qcell_noalloc-*.rs");
-            t.compile_fail("src/compiletest/qcell-*.rs");
-        } else {
-            t.compile_fail("src/compiletest/lcell-*.rs");
-            t.compile_fail("src/compiletest/qcell_noalloc-*.rs");
-        }
-    }
-}
 
 // Static assertions on traits
 #[cfg(test)]
