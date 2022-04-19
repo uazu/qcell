@@ -361,12 +361,10 @@ mod tests {
                 val
             });
 
-            match done_rx.recv_timeout(d) {
-                Ok(_) => panic!("ACellOwner::wait_for_new completed (but it shouldn't have)"),
-                Err(_) => {
-                    // thread timed out as expected
-                }
-            }
+            assert!(
+                done_rx.recv_timeout(d).is_err(),
+                "ACellOwner::wait_for_new completed (but it shouldn't have)"
+            );
         }
 
         assert_time_out(std::time::Duration::from_millis(1000), || {

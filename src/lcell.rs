@@ -10,6 +10,11 @@ type Id<'id> = PhantomData<Invariant<&'id ()>>;
 /// Use `LCellOwner::scope(|owner| ...)` to create an instance of this
 /// type.
 ///
+/// If the `generativity` feature is enabled, the
+/// [`generativity`](https://crates.io/crates/generativity) crate can be used to
+/// create a `Guard` for [`LCellOwner::new`]. This removes the requirment of
+/// accessing an `LCellOwner` only inside closures.
+///
 /// The key piece of Rust syntax that enables this is `for<'id>`.
 /// This allows creating an invariant lifetime within a closure, which
 /// is different to any other Rust lifetime thanks to the techniques
@@ -22,11 +27,6 @@ type Id<'id> = PhantomData<Invariant<&'id ()>>;
 /// Also see [this Reddit
 /// comment](https://www.reddit.com/r/rust/comments/3aahl1/outside_of_closures_what_are_some_other_uses_for/csavac5/)
 /// and its linked playground code.
-///
-/// `LCellOwner` uses a closure to contain the invariant lifetime.
-/// However it's also worth noting the alternative approach used in
-/// crate [`generativity`](https://crates.io/crates/generativity) that
-/// uses a macro instead.
 ///
 /// Some history: `GhostCell` by
 /// [**pythonesque**](https://github.com/pythonesque) predates the
@@ -49,11 +49,34 @@ impl<'id> LCellOwner<'id> {
     /// only within the scope of the execution of the given closure
     /// call.  If two scope calls are nested, then the two owners get
     /// different lifetimes.
+    ///
+    /// ```rust
+    /// use qcell::{LCellOwner, LCell};
+    /// LCellOwner::scope(|owner| {
+    ///     let cell = LCell::new(100);
+    ///     assert_eq!(cell.ro(&owner), &100);
+    /// })
+    /// ```
     pub fn scope<F>(f: F)
     where
         F: for<'scope_id> FnOnce(LCellOwner<'scope_id>),
     {
         f(Self { _id: PhantomData })
+    }
+
+    /// Create a new `LCellOwner` with a unique lifetime from a `Guard`.
+    ///
+    /// ```rust
+    /// use qcell::{generativity::make_guard, LCellOwner, LCell};
+    /// make_guard!(guard);
+    /// let mut owner = LCellOwner::new(guard);
+    /// let cell = LCell::new(100);
+    /// assert_eq!(cell.ro(&owner), &100);
+    /// ```
+    #[cfg(feature = "generativity")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "generativity")))]
+    pub fn new(_guard: generativity::Guard<'id>) -> Self {
+        Self { _id: PhantomData }
     }
 
     /// Create a new cell owned by this owner instance.  See also
@@ -205,6 +228,21 @@ mod tests {
             let total = *c1ref + *c2ref;
             assert_eq!(total, 303);
         });
+    }
+
+    #[test]
+    #[cfg(feature = "generativity")]
+    fn generativity() {
+        generativity::make_guard!(guard);
+        let mut owner = LCellOwner::new(guard);
+        let c1 = LCell::new(100_u32);
+        let c2 = LCell::new(200_u32);
+        (*owner.rw(&c1)) += 1;
+        (*owner.rw(&c2)) += 2;
+        let c1ref = owner.ro(&c1);
+        let c2ref = owner.ro(&c2);
+        let total = *c1ref + *c2ref;
+        assert_eq!(total, 303);
     }
 
     #[test]
