@@ -1,0 +1,13 @@
+[package]
+name = "trybuild-qcell"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+qcell = { path = "..", features = ["generativity"] }
+
+[dev-dependencies]
+trybuild = "1.0"
+rustversion = "1.0"
+crossbeam = "0.7"
+pin-utils = "0.1"

@@ -8,8 +8,8 @@ error[E0277]: `Cell<i32>` cannot be shared between threads safely
     = note: required because of the requirements on the impl of `Sync` for `LCell<'_, Cell<i32>>`
     = note: required because of the requirements on the impl of `Send` for `&LCell<'_, Cell<i32>>`
     = note: required because it appears within the type `[closure@$DIR/src/compiletest/lcell-12.rs:12:34: 12:62]`
-note: required by a bound in `Scope::<'env>::spawn`
+note: required by a bound in `crossbeam::thread::Scope::<'env>::spawn`
    --> $CARGO/crossbeam-utils-0.7.2/src/thread.rs
     |
     |         F: Send + 'env,
-    |            ^^^^ required by this bound in `Scope::<'env>::spawn`
+    |            ^^^^ required by this bound in `crossbeam::thread::Scope::<'env>::spawn`

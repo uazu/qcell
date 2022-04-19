@@ -1,0 +1,25 @@
+error[E0505]: cannot move out of `owner` because it is borrowed
+  --> src/compiletest/lcell_generativity-10.rs:10:22
+   |
+9  |     let val_ref = owner.ro(&cell);
+   |                   --------------- borrow of `owner` occurs here
+10 |     crossbeam::scope(move |s| {
+   |                      ^^^^^^^^ move out of `owner` occurs here
+11 |         s.spawn(move |_| assert_eq!(*owner.ro(&cell), 100)).join().unwrap(); // Compile fail
+   |                                      ----- move occurs due to use in closure
+12 |     }).unwrap();
+13 |     assert_eq!(*val_ref, 100);
+   |     ------------------------- borrow later used here
+
+error[E0505]: cannot move out of `cell` because it is borrowed
+  --> src/compiletest/lcell_generativity-10.rs:10:22
+   |
+9  |     let val_ref = owner.ro(&cell);
+   |                            ----- borrow of `cell` occurs here
+10 |     crossbeam::scope(move |s| {
+   |                      ^^^^^^^^ move out of `cell` occurs here
+11 |         s.spawn(move |_| assert_eq!(*owner.ro(&cell), 100)).join().unwrap(); // Compile fail
+   |                                                ---- move occurs due to use in closure
+12 |     }).unwrap();
+13 |     assert_eq!(*val_ref, 100);
+   |     ------------------------- borrow later used here

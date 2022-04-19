@@ -4,7 +4,17 @@ This project follows Rust semantic versioning.
 
 <!-- see keepachangelog.com for format ideas -->
 
-## 0.5.0
+## 0.5.1 (2022-04-19)
+
+### Added
+
+- `LCellOwner` can now be created from a
+  [**generativity**](https://crates.io/crates/generativity) guard,
+  which makes `LCellOwner` creation more convenient.  This change was
+  contributed by [Troy Hinckley](https://github.com/CeleritasCelery).
+
+
+## 0.5.0 (2022-01-23)
 
 ### Changed
 

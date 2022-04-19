@@ -12,7 +12,7 @@ $/ = undef;
 
 for my $in (<src/doctest_*.rs>) {
     my $prefix = $in;
-    $prefix =~ s|^.*doctest_(.*?)\.rs$|src/compiletest/$1|;
+    $prefix =~ s|^.*doctest_(.*?)\.rs$|trybuild-qcell/src/compiletest/$1|;
 
     die "Can't read $in" unless open IN, "<$in";
     my $data = <IN>;

@@ -6,6 +6,7 @@
 # check the "std" and "alloc" annotations on some types.
 
 cargo doc &&
+cargo doc --features generativity &&
 cargo doc --no-default-features --features alloc &&
 cargo doc --no-default-features &&
 RUSTDOCFLAGS="--cfg docsrs" cargo +nightly doc --all-features

@@ -1,5 +1,5 @@
 error[E0308]: mismatched types
-  --> $DIR/tlcell-02.rs:18:28
+  --> src/compiletest/tlcell-02.rs:18:28
    |
 18 |     let c1ref = owner_b.ro(&*c1);   // Compile error
    |                            ^^^^ expected struct `MarkerB`, found struct `MarkerA`
