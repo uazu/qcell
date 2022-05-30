@@ -156,6 +156,7 @@ impl<'id> LCellOwner<'id> {
 /// See also [crate documentation](index.html).
 ///
 /// [`LCellOwner`]: struct.LCellOwner.html
+#[repr(transparent)]
 pub struct LCell<'id, T: ?Sized> {
     _id: Id<'id>,
     value: UnsafeCell<T>,
@@ -192,6 +193,15 @@ impl<'id, T: ?Sized> LCell<'id, T> {
     #[inline]
     pub fn rw<'a>(&'a self, owner: &'a mut LCellOwner<'id>) -> &'a mut T {
         owner.rw(self)
+    }
+
+    /// Returns a mutable reference to the underlying data.
+    ///
+    /// This call borrows `LCell` mutably (at compile-time) which guarantees
+    /// that we possess the only reference.
+    #[inline]
+    pub fn get_mut(&mut self) -> &mut T {
+        self.value.get_mut()
     }
 }
 
@@ -294,6 +304,17 @@ mod tests {
             *mutref1 += 1;
             *mutref2 += 1;
             *mutref3 += 1;
+        });
+    }
+
+    #[test]
+    fn lcell_get_mut() {
+        LCellOwner::scope(|owner| {
+            let mut cell = LCell::new(100u32);
+            let mut_ref = cell.get_mut();
+            *mut_ref = 50;
+            let cell_ref = owner.ro(&cell);
+            assert_eq!(*cell_ref, 50);
         });
     }
 
