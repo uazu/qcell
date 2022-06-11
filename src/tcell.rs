@@ -176,6 +176,7 @@ impl<Q: 'static> TCellOwner<Q> {
 /// See also [crate documentation](index.html).
 ///
 /// [`TCellOwner`]: struct.TCellOwner.html
+#[repr(transparent)]
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 pub struct TCell<Q, T: ?Sized> {
     // Use Invariant<Q> for invariant parameter
@@ -200,6 +201,15 @@ impl<Q, T> TCell<Q, T> {
             value: UnsafeCell::new(value),
         }
     }
+
+    /// Destroy the cell and return the contained value
+    ///
+    /// Safety: Since this consumes the cell, there can be no other
+    /// references to the cell or the data at this point.
+    #[inline]
+    pub fn into_inner(self) -> T {
+        self.value.into_inner()
+    }
 }
 
 impl<Q, T: ?Sized> TCell<Q, T> {
@@ -220,6 +230,22 @@ impl<Q, T: ?Sized> TCell<Q, T> {
     #[inline]
     pub fn rw<'a>(&'a self, owner: &'a mut TCellOwner<Q>) -> &'a mut T {
         owner.rw(self)
+    }
+
+    /// Returns a mutable reference to the underlying data
+    ///
+    /// Note that this is only useful at the beginning-of-life or
+    /// end-of-life of the cell when you have exclusive access to it.
+    /// Normally you'd use [`TCell::rw`] or [`TCellOwner::rw`] to get
+    /// a mutable reference to the contents of the cell.
+    ///
+    /// Safety: This call borrows `TCell` mutably which guarantees
+    /// that we possess the only reference.  This means that there can
+    /// be no active borrows of other forms, even ones obtained using
+    /// an immutable reference.
+    #[inline]
+    pub fn get_mut(&mut self) -> &mut T {
+        self.value.get_mut()
     }
 }
 
@@ -374,6 +400,27 @@ mod tests {
             let _owner1 = ACellOwner::new();
             let _owner2 = ACellOwner::wait_for_new();
         });
+    }
+
+    #[test]
+    fn tcell_get_mut() {
+        struct Marker;
+        type ACellOwner = TCellOwner<Marker>;
+        type ACell<T> = TCell<Marker, T>;
+        let owner = ACellOwner::new();
+        let mut cell = ACell::new(100u32);
+        let mut_ref = cell.get_mut();
+        *mut_ref = 50;
+        let cell_ref = owner.ro(&cell);
+        assert_eq!(*cell_ref, 50);
+    }
+
+    #[test]
+    fn tcell_into_inner() {
+        struct Marker;
+        type ACell<T> = TCell<Marker, T>;
+        let cell = ACell::new(100u32);
+        assert_eq!(cell.into_inner(), 100);
     }
 
     #[test]

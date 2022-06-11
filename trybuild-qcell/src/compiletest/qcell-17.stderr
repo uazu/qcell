@@ -1,0 +1,9 @@
+error[E0502]: cannot borrow `cell` as mutable because it is also borrowed as immutable
+  --> src/compiletest/qcell-17.rs:9:6
+   |
+8  |     let cell_ref = owner.rw(&cell);
+   |                             ----- immutable borrow occurs here
+9  |     *cell.get_mut() = 50; // Compile fail
+   |      ^^^^^^^^^^^^^^ mutable borrow occurs here
+10 |     assert_eq!(100, *cell_ref);
+   |     -------------------------- immutable borrow later used here

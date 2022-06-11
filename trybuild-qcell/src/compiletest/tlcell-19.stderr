@@ -1,0 +1,9 @@
+error[E0502]: cannot borrow `cell` as mutable because it is also borrowed as immutable
+  --> src/compiletest/tlcell-19.rs:12:6
+   |
+11 |     let cell_ref = owner.ro(&cell);
+   |                             ----- immutable borrow occurs here
+12 |     *cell.get_mut() = 50; // Compile fail
+   |      ^^^^^^^^^^^^^^ mutable borrow occurs here
+13 |     assert_eq!(100, *cell_ref);
+   |     -------------------------- immutable borrow later used here

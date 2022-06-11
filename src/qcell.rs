@@ -154,6 +154,15 @@ impl<T> QCell<T> {
             owner: id.into(),
         }
     }
+
+    /// Destroy the cell and return the contained value
+    ///
+    /// Safety: Since this consumes the cell, there can be no other
+    /// references to the cell or the data at this point.
+    #[inline]
+    pub fn into_inner(self) -> T {
+        self.value.into_inner()
+    }
 }
 
 #[cfg(feature = "alloc")]
@@ -174,6 +183,22 @@ impl<T: ?Sized> QCell<T> {
     #[inline]
     pub fn rw<'a>(&'a self, owner: &'a mut QCellOwner) -> &'a mut T {
         owner.rw(self)
+    }
+
+    /// Returns a mutable reference to the underlying data
+    ///
+    /// Note that this is only useful at the beginning-of-life or
+    /// end-of-life of the cell when you have exclusive access to it.
+    /// Normally you'd use [`QCell::rw`] or [`QCellOwner::rw`] to get
+    /// a mutable reference to the contents of the cell.
+    ///
+    /// Safety: This call borrows `QCell` mutably which guarantees
+    /// that we possess the only reference.  This means that there can
+    /// be no active borrows of other forms, even ones obtained using
+    /// an immutable reference.
+    #[inline]
+    pub fn get_mut(&mut self) -> &mut T {
+        self.value.get_mut()
     }
 }
 
@@ -876,6 +901,23 @@ mod tests_with_alloc {
             15,
             owner1.ro(&c11) + owner2.ro(&c12) + owner1.ro(&c21) + owner2.ro(&c22)
         );
+    }
+
+    #[test]
+    fn qcell_get_mut() {
+        let owner = QCellOwner::new();
+        let mut cell = QCell::new(&owner, 100u32);
+        let mut_ref = cell.get_mut();
+        *mut_ref = 50;
+        let cell_ref = owner.ro(&cell);
+        assert_eq!(*cell_ref, 50);
+    }
+
+    #[test]
+    fn qcell_into_inner() {
+        let owner = QCellOwner::new();
+        let cell = QCell::new(&owner, 100u32);
+        assert_eq!(cell.into_inner(), 100);
     }
 
     #[test]

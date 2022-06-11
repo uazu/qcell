@@ -173,6 +173,15 @@ impl<'id, T> LCell<'id, T> {
             value: UnsafeCell::new(value),
         }
     }
+
+    /// Destroy the cell and return the contained value
+    ///
+    /// Safety: Since this consumes the cell, there can be no other
+    /// references to the cell or the data at this point.
+    #[inline]
+    pub fn into_inner(self) -> T {
+        self.value.into_inner()
+    }
 }
 
 impl<'id, T: ?Sized> LCell<'id, T> {
@@ -195,10 +204,17 @@ impl<'id, T: ?Sized> LCell<'id, T> {
         owner.rw(self)
     }
 
-    /// Returns a mutable reference to the underlying data.
+    /// Returns a mutable reference to the underlying data
     ///
-    /// This call borrows `LCell` mutably (at compile-time) which guarantees
-    /// that we possess the only reference.
+    /// Note that this is only useful at the beginning-of-life or
+    /// end-of-life of the cell when you have exclusive access to it.
+    /// Normally you'd use [`LCell::rw`] or [`LCellOwner::rw`] to get
+    /// a mutable reference to the contents of the cell.
+    ///
+    /// Safety: This call borrows `LCell` mutably which guarantees
+    /// that we possess the only reference.  This means that there can
+    /// be no active borrows of other forms, even ones obtained using
+    /// an immutable reference.
     #[inline]
     pub fn get_mut(&mut self) -> &mut T {
         self.value.get_mut()
@@ -316,6 +332,12 @@ mod tests {
             let cell_ref = owner.ro(&cell);
             assert_eq!(*cell_ref, 50);
         });
+    }
+
+    #[test]
+    fn lcell_into_inner() {
+        let cell = LCell::new(100u32);
+        assert_eq!(cell.into_inner(), 100);
     }
 
     #[test]

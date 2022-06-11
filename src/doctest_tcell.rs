@@ -393,3 +393,54 @@
 //! *ref1 = 1;  // Two mutable refs at the same time!  Unsound!
 //! *ref2 = 2;
 //! ```
+//!
+//! A reference obtained using `get_mut` should exclude any other kind
+//! of borrowing.
+//!
+//! ```compile_fail
+//!# use qcell::{TCell, TCellOwner};
+//!# struct Marker;
+//!# type ACell<T> = TCell<Marker, T>;
+//!# type ACellOwner = TCellOwner<Marker>;
+//! let owner = ACellOwner::new();
+//! let mut cell = ACell::new(100);
+//! let cell_ref = cell.get_mut();
+//! assert_eq!(100, *owner.ro(&cell)); // Compile fail
+//! *cell_ref = 50;
+//! ```
+//!
+//! ```compile_fail
+//!# use qcell::{TCell, TCellOwner};
+//!# struct Marker;
+//!# type ACell<T> = TCell<Marker, T>;
+//!# type ACellOwner = TCellOwner<Marker>;
+//! let mut owner = ACellOwner::new();
+//! let mut cell = ACell::new(100);
+//! let cell_ref = cell.get_mut();
+//! assert_eq!(100, *owner.rw(&cell)); // Compile fail
+//! *cell_ref = 50;
+//! ```
+//!
+//! ```compile_fail
+//!# use qcell::{TCell, TCellOwner};
+//!# struct Marker;
+//!# type ACell<T> = TCell<Marker, T>;
+//!# type ACellOwner = TCellOwner<Marker>;
+//! let owner = ACellOwner::new();
+//! let mut cell = ACell::new(100);
+//! let cell_ref = owner.ro(&cell);
+//! *cell.get_mut() = 50; // Compile fail
+//! assert_eq!(100, *cell_ref);
+//! ```
+//!
+//! ```compile_fail
+//!# use qcell::{TCell, TCellOwner};
+//!# struct Marker;
+//!# type ACell<T> = TCell<Marker, T>;
+//!# type ACellOwner = TCellOwner<Marker>;
+//! let mut owner = ACellOwner::new();
+//! let mut cell = ACell::new(100);
+//! let cell_ref = owner.rw(&cell);
+//! *cell.get_mut() = 50; // Compile fail
+//! assert_eq!(100, *cell_ref);
+//! ```
