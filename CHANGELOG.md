@@ -4,6 +4,18 @@ This project follows Rust semantic versioning.
 
 <!-- see keepachangelog.com for format ideas -->
 
+## 0.5.2 (2022-06-11)
+
+### Added
+
+- `#[repr(transparent)]` added to `LCell`, `TCell` and `TLCell`
+- `get_mut` and `into_inner` added to all cell types which better
+  supports beginning/end-of-life of the cell
+
+[Troy Hinckley](https://github.com/CeleritasCelery) contributed to
+this point release.
+
+
 ## 0.5.1 (2022-04-19)
 
 ### Added
