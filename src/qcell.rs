@@ -72,7 +72,7 @@ macro_rules! distinct_check {
 /// instances to be created after the owner has gone.  But [`QCell`]
 /// instances can outlive the owner in any case, so this makes no
 /// difference to safety.
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct QCellOwnerID(usize);
 
 impl QCellOwnerID {
