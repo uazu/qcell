@@ -4,6 +4,16 @@ This project follows Rust semantic versioning.
 
 <!-- see keepachangelog.com for format ideas -->
 
+## 0.5.3 (2023-01-15)
+
+### Added
+
+- `Hash`, `Eq` and `PartialEq` implementations for QCellOwnerID.
+  These changes were contributed by [Simon
+  Ask](https://github.com/simonask) and
+  [LegionMammal978](https://github.com/LegionMammal978)
+
+
 ## 0.5.2 (2022-06-11)
 
 ### Added
