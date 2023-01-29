@@ -1,0 +1,5 @@
+error[E0599]: no function or associated item named `default` found for struct `QCell` in the current scope
+ --> src/compiletest/qcell-18.rs:6:39
+  |
+6 |     let mut cell: QCell<i32> = QCell::default();
+  |                                       ^^^^^^^ function or associated item not found in `QCell<_>`

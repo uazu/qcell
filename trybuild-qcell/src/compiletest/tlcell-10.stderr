@@ -1,8 +1,8 @@
 error[E0277]: `*const ()` cannot be sent between threads safely
- --> src/compiletest/tlcell-10.rs:8:5
+ --> src/compiletest/tlcell-10.rs:8:15
   |
 8 |     is_send::<TLCellOwner<Marker>>();  // Compile fail
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `*const ()` cannot be sent between threads safely
+  |               ^^^^^^^^^^^^^^^^^^^ `*const ()` cannot be sent between threads safely
   |
   = help: within `TLCellOwner<Marker>`, the trait `Send` is not implemented for `*const ()`
   = note: required because it appears within the type `qcell::tlcell::NotSendOrSync`

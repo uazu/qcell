@@ -394,3 +394,27 @@
 //! *cell.get_mut() = 50; // Compile fail
 //! assert_eq!(100, *cell_ref);
 //! ```
+//!
+//! `Default` is implemented, but only if the enclosed type has a
+//! default:
+//!
+//! ```
+//!# use qcell::{TLCell, TLCellOwner};
+//!# struct Marker;
+//!# type ACell<T> = TLCell<Marker, T>;
+//!# type ACellOwner = TLCellOwner<Marker>;
+//! let mut owner = ACellOwner::new();
+//! let mut cell: ACell<i32> = ACell::default();
+//! assert_eq!(0, *owner.ro(&cell));
+//! ```
+//!
+//! ```compile_fail
+//!# use qcell::{TLCell, TLCellOwner};
+//!# struct Marker;
+//!# type ACell<T> = TLCell<Marker, T>;
+//!# type ACellOwner = TLCellOwner<Marker>;
+//! struct NoDefault(i32);
+//! let mut owner = ACellOwner::new();
+//! let mut cell: ACell<NoDefault> = ACell::default(); // Compile fail
+//! assert_eq!(0, owner.ro(&cell).0);
+//! ```

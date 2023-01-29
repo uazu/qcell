@@ -212,6 +212,12 @@ impl<Q, T: ?Sized> TLCell<Q, T> {
     }
 }
 
+impl<Q: 'static, T: Default + ?Sized> Default for TLCell<Q, T> {
+    fn default() -> Self {
+        TLCell::new(T::default())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{TLCell, TLCellOwner};

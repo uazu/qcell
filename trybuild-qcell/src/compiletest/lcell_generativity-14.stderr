@@ -1,8 +1,8 @@
 error[E0277]: `Rc<()>` cannot be sent between threads safely
- --> src/compiletest/lcell_generativity-14.rs:8:5
+ --> src/compiletest/lcell_generativity-14.rs:8:15
   |
 8 |     is_send::<LCell<'_, Rc<()>>>();  // Compile fail
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `Rc<()>` cannot be sent between threads safely
+  |               ^^^^^^^^^^^^^^^^^ `Rc<()>` cannot be sent between threads safely
   |
   = help: within `LCell<'_, Rc<()>>`, the trait `Send` is not implemented for `Rc<()>`
   = note: required because it appears within the type `UnsafeCell<Rc<()>>`

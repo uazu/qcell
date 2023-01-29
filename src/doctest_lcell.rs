@@ -356,3 +356,23 @@
 //!     assert_eq!(100, *cell_ref);
 //! });
 //! ```
+//!
+//! `Default` is implemented, but only if the enclosed type has a
+//! default:
+//!
+//! ```
+//!# use qcell::{LCell, LCellOwner};
+//! LCellOwner::scope(|mut owner| {
+//!     let mut cell: LCell<i32> = LCell::default();
+//!     assert_eq!(0, *owner.ro(&cell));
+//! });
+//! ```
+//!
+//! ```compile_fail
+//!# use qcell::{LCell, LCellOwner};
+//! LCellOwner::scope(|mut owner| {
+//!     struct NoDefault(i32);
+//!     let mut cell: LCell<NoDefault> = LCell::default(); // Compile fail
+//!     assert_eq!(0, owner.ro(&cell).0);
+//! });
+//! ```

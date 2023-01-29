@@ -221,6 +221,12 @@ impl<'id, T: ?Sized> LCell<'id, T> {
     }
 }
 
+impl<'id, T: Default + ?Sized> Default for LCell<'id, T> {
+    fn default() -> Self {
+        LCell::new(T::default())
+    }
+}
+
 // LCell already automatically implements Send, but not
 // Sync. We can add these implementations though, since it's fine to
 // send a &LCell to another thread, and even mutably borrow the value

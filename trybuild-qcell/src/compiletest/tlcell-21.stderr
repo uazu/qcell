@@ -1,0 +1,12 @@
+error[E0277]: the trait bound `NoDefault: Default` is not satisfied
+  --> src/compiletest/tlcell-21.rs:11:38
+   |
+11 |     let mut cell: ACell<NoDefault> = ACell::default(); // Compile fail
+   |                                      ^^^^^^^^^^^^^^ the trait `Default` is not implemented for `NoDefault`
+   |
+   = help: the trait `Default` is implemented for `TLCell<Q, T>`
+   = note: required for `TLCell<Marker, NoDefault>` to implement `Default`
+help: consider annotating `NoDefault` with `#[derive(Default)]`
+   |
+9  |     #[derive(Default)]
+   |

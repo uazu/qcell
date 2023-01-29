@@ -1,42 +1,28 @@
-error[E0495]: cannot infer an appropriate lifetime for lifetime parameter `'id` due to conflicting requirements
-  --> src/compiletest/lcell-03.rs:9:37
-   |
-9  |             let c1 = Rc::new(owner1.cell(100u32));
-   |                                     ^^^^
-   |
-note: first, the lifetime cannot outlive the anonymous lifetime #1 defined here...
-  --> src/compiletest/lcell-03.rs:8:27
-   |
-8  |           LCellOwner::scope(|mut owner2| {
-   |  ___________________________^
-9  | |             let c1 = Rc::new(owner1.cell(100u32));
-10 | |             let c1mutref2 = owner2.rw(&c1);    // Compile error
-11 | |             println!("{}", *c1mutref2);
-12 | |         });
-   | |_________^
-note: ...so that the types are compatible
-  --> src/compiletest/lcell-03.rs:10:36
-   |
-10 |             let c1mutref2 = owner2.rw(&c1);    // Compile error
-   |                                    ^^
-   = note: expected `&mut LCellOwner<'_>`
-              found `&mut LCellOwner<'_>`
-note: but, the lifetime must be valid for the anonymous lifetime #1 defined here...
-  --> src/compiletest/lcell-03.rs:7:23
-   |
-7  |       LCellOwner::scope(|mut owner1| {
-   |  _______________________^
-8  | |         LCellOwner::scope(|mut owner2| {
-9  | |             let c1 = Rc::new(owner1.cell(100u32));
-10 | |             let c1mutref2 = owner2.rw(&c1);    // Compile error
-11 | |             println!("{}", *c1mutref2);
-12 | |         });
-13 | |     });
-   | |_____^
-note: ...so that the types are compatible
-  --> src/compiletest/lcell-03.rs:9:37
-   |
-9  |             let c1 = Rc::new(owner1.cell(100u32));
-   |                                     ^^^^
-   = note: expected `&LCellOwner<'_>`
-              found `&LCellOwner<'_>`
+error[E0521]: borrowed data escapes outside of closure
+ --> src/compiletest/lcell-03.rs:9:30
+  |
+7 |     LCellOwner::scope(|mut owner1| {
+  |                        ---------- `owner1` declared here, outside of the closure body
+8 |         LCellOwner::scope(|mut owner2| {
+  |                            ---------- `owner2` is a reference that is only valid in the closure body
+9 |             let c1 = Rc::new(owner1.cell(100u32));
+  |                              ^^^^^^^^^^^^^^^^^^^ `owner2` escapes the closure body here
+  |
+  = note: requirement occurs because of the type `LCellOwner<'_>`, which makes the generic argument `'_` invariant
+  = note: the struct `LCellOwner<'id>` is invariant over the parameter `'id`
+  = help: see <https://doc.rust-lang.org/nomicon/subtyping.html> for more information about variance
+
+error[E0521]: borrowed data escapes outside of closure
+ --> src/compiletest/lcell-03.rs:9:30
+  |
+7 |     LCellOwner::scope(|mut owner1| {
+  |                        ----------
+  |                        |
+  |                        `owner1` is a reference that is only valid in the closure body
+  |                        has type `LCellOwner<'1>`
+8 |         LCellOwner::scope(|mut owner2| {
+9 |             let c1 = Rc::new(owner1.cell(100u32));
+  |                              ^^^^^^^^^^^^^^^^^^^
+  |                              |
+  |                              `owner1` escapes the closure body here
+  |                              argument requires that `'1` must outlive `'static`

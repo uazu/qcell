@@ -2,7 +2,7 @@ error[E0308]: mismatched types
  --> src/compiletest/tlcell-16.rs:9:22
   |
 9 |     let mut owner1 = TLCellOwner::<MarkerA>::new() as TLCellOwner<MarkerB>;  // Compile fail
-  |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ one type is more general than the other
+  |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ one type is more general than the other
   |
-  = note: expected struct `TLCellOwner<fn(&'static ())>`
-             found struct `TLCellOwner<for<'r> fn(&'r ())>`
+  = note: expected struct `TLCellOwner<fn(&())>`
+             found struct `TLCellOwner<for<'a> fn(&'a ())>`

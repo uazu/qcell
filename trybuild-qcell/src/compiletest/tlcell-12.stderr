@@ -1,8 +1,8 @@
 error[E0277]: `UnsafeCell<()>` cannot be shared between threads safely
- --> src/compiletest/tlcell-12.rs:8:5
+ --> src/compiletest/tlcell-12.rs:8:15
   |
 8 |     is_sync::<TLCell<Marker, ()>>(); // Compile fail
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `UnsafeCell<()>` cannot be shared between threads safely
+  |               ^^^^^^^^^^^^^^^^^^ `UnsafeCell<()>` cannot be shared between threads safely
   |
   = help: within `TLCell<Marker, ()>`, the trait `Sync` is not implemented for `UnsafeCell<()>`
   = note: required because it appears within the type `TLCell<Marker, ()>`

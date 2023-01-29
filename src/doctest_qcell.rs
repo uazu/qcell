@@ -297,3 +297,11 @@
 //! *cell.get_mut() = 50; // Compile fail
 //! assert_eq!(100, *cell_ref);
 //! ```
+//!
+//! `Default` is not implemented for `QCell`, since the owner must be
+//! provided explicity:
+//!
+//! ```compile_fail
+//!# use qcell::QCell;
+//! let mut cell: QCell<i32> = QCell::default();
+//! ```

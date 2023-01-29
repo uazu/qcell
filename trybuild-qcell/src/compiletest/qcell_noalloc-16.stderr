@@ -1,18 +1,24 @@
 error[E0277]: `Rc<i32>` cannot be sent between threads safely
-   --> src/compiletest/qcell_noalloc-16.rs:11:5
+   --> src/compiletest/qcell_noalloc-16.rs:11:24
     |
 11  |       std::thread::spawn(move || {    // Compile fail
-    |  _____^^^^^^^^^^^^^^^^^^_-
+    |       ------------------ ^------
+    |       |                  |
+    |  _____|__________________within this `[closure@$DIR/src/compiletest/qcell_noalloc-16.rs:11:24: 11:31]`
     | |     |
-    | |     `Rc<i32>` cannot be sent between threads safely
+    | |     required by a bound introduced by this call
 12  | |         assert_eq!(100, **owner.as_ref().ro(&cell));
 13  | |     }).join();
-    | |_____- within this `[closure@$DIR/src/compiletest/qcell_noalloc-16.rs:11:24: 13:6]`
+    | |_____^ `Rc<i32>` cannot be sent between threads safely
     |
-    = help: within `[closure@$DIR/src/compiletest/qcell_noalloc-16.rs:11:24: 13:6]`, the trait `Send` is not implemented for `Rc<i32>`
+    = help: within `[closure@$DIR/src/compiletest/qcell_noalloc-16.rs:11:24: 11:31]`, the trait `Send` is not implemented for `Rc<i32>`
     = note: required because it appears within the type `UnsafeCell<Rc<i32>>`
     = note: required because it appears within the type `QCell<Rc<i32>>`
-    = note: required because it appears within the type `[closure@$DIR/src/compiletest/qcell_noalloc-16.rs:11:24: 13:6]`
+note: required because it's used within this closure
+   --> src/compiletest/qcell_noalloc-16.rs:11:24
+    |
+11  |     std::thread::spawn(move || {    // Compile fail
+    |                        ^^^^^^^
 note: required by a bound in `spawn`
    --> $RUST/std/src/thread/mod.rs
     |

@@ -1,0 +1,12 @@
+error[E0277]: the trait bound `NoDefault: Default` is not satisfied
+ --> src/compiletest/lcell-20.rs:8:42
+  |
+8 |         let mut cell: LCell<NoDefault> = LCell::default(); // Compile fail
+  |                                          ^^^^^^^^^^^^^^ the trait `Default` is not implemented for `NoDefault`
+  |
+  = help: the trait `Default` is implemented for `LCell<'id, T>`
+  = note: required for `LCell<'_, NoDefault>` to implement `Default`
+help: consider annotating `NoDefault` with `#[derive(Default)]`
+  |
+7 |         #[derive(Default)]
+  |

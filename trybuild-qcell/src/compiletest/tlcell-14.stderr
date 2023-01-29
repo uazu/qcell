@@ -1,8 +1,8 @@
 error[E0277]: `Rc<()>` cannot be sent between threads safely
- --> src/compiletest/tlcell-14.rs:9:5
+ --> src/compiletest/tlcell-14.rs:9:15
   |
 9 |     is_send::<TLCell<Marker, Rc<()>>>();  // Compile fail
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `Rc<()>` cannot be sent between threads safely
+  |               ^^^^^^^^^^^^^^^^^^^^^^ `Rc<()>` cannot be sent between threads safely
   |
   = help: within `TLCell<Marker, Rc<()>>`, the trait `Send` is not implemented for `Rc<()>`
   = note: required because it appears within the type `UnsafeCell<Rc<()>>`

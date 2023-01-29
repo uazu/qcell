@@ -1,8 +1,8 @@
 error[E0277]: `*const ()` cannot be shared between threads safely
- --> src/compiletest/tlcell-11.rs:8:5
+ --> src/compiletest/tlcell-11.rs:8:15
   |
 8 |     is_sync::<TLCellOwner<Marker>>();  // Compile fail
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `*const ()` cannot be shared between threads safely
+  |               ^^^^^^^^^^^^^^^^^^^ `*const ()` cannot be shared between threads safely
   |
   = help: within `TLCellOwner<Marker>`, the trait `Sync` is not implemented for `*const ()`
   = note: required because it appears within the type `qcell::tlcell::NotSendOrSync`

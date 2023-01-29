@@ -1,8 +1,8 @@
 error[E0277]: `PhantomPinned` cannot be unpinned
- --> src/compiletest/qcell_noalloc-01.rs:7:5
+ --> src/compiletest/qcell_noalloc-01.rs:7:16
   |
 7 |     is_unpin::<QCellOwnerPinned>();
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ within `QCellOwnerPinned`, the trait `Unpin` is not implemented for `PhantomPinned`
+  |                ^^^^^^^^^^^^^^^^ within `QCellOwnerPinned`, the trait `Unpin` is not implemented for `PhantomPinned`
   |
   = note: consider using `Box::pin`
   = note: required because it appears within the type `QCellOwnerPinned`

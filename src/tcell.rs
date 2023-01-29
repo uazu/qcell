@@ -249,6 +249,12 @@ impl<Q, T: ?Sized> TCell<Q, T> {
     }
 }
 
+impl<Q: 'static, T: Default + ?Sized> Default for TCell<Q, T> {
+    fn default() -> Self {
+        TCell::new(T::default())
+    }
+}
+
 // We can add a Sync implementation, since it's fine to send a &TCell
 // to another thread, and even mutably borrow the value there, as long
 // as T is Send and Sync.
