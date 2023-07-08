@@ -365,7 +365,6 @@ extern crate alloc;
 
 mod lcell;
 mod qcell;
-#[cfg(feature = "std")]
 mod tcell;
 #[cfg(feature = "std")]
 mod tlcell;
@@ -411,12 +410,14 @@ pub use crate::qcell::QCell;
 pub use crate::qcell::QCellOwnerID;
 pub use crate::qcell::QCellOwnerPinned;
 pub use crate::qcell::QCellOwnerSeq;
+pub use crate::tcell::TCell;
+pub use crate::tcell::TCellOwner;
 
 #[cfg(feature = "alloc")]
 pub use crate::qcell::QCellOwner;
 
 #[cfg(feature = "std")]
-pub use crate::{tcell::TCell, tcell::TCellOwner, tlcell::TLCell, tlcell::TLCellOwner};
+pub use crate::{tlcell::TLCell, tlcell::TLCellOwner};
 
 // Static assertions on traits
 #[cfg(test)]
