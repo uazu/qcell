@@ -5,8 +5,12 @@
 # no_std docs).  Then finally build as docs.rs sees it to visually
 # check the "std" and "alloc" annotations on some types.
 
-cargo doc &&
-cargo doc --features generativity &&
-cargo doc --no-default-features --features alloc &&
-cargo doc --no-default-features &&
+./run-feature-combinations |
+    while read msrv features
+    do
+        echo "=== Features: $features"
+        cargo doc --no-default-features --features "$features" || exit 1
+    done
+
+echo "=== Docs.rs output"
 RUSTDOCFLAGS="--cfg docsrs" cargo +nightly doc --all-features

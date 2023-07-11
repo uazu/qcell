@@ -1,3 +1,4 @@
+#[cfg(any(feature = "std", feature = "exclusion-set"))]
 use core::any::TypeId;
 use core::cell::UnsafeCell;
 use core::marker::PhantomData;
@@ -28,7 +29,7 @@ pub struct TCellOwner<Q: 'static> {
 }
 
 impl<Q: 'static> Drop for TCellOwner<Q> {
-    #[cfg(all(not(feature = "exclusion-set"), feature = "std"))]
+    #[cfg(all(feature = "std", not(feature = "exclusion-set")))]
     fn drop(&mut self) {
         // Remove the TypeId of Q from the HashSet, indicating that
         // no more instances of TCellOwner<Q> exist.
@@ -77,7 +78,9 @@ impl<Q: 'static> TCellOwner<Q> {
     /// specified otherwise (using e.g. `RUST_TEST_THREADS`), so
     /// this panic may be more easy to trigger than you might think.
     /// To avoid this panic, consider using the methods
-    /// [`TCellOwner::wait_for_new`] or [`TCellOwner::try_new`] instead.
+    #[cfg_attr(feature = "std", doc = "[`TCellOwner::wait_for_new`]")]
+    #[cfg_attr(not(feature = "std"), doc = "`TCellOwner::wait_for_new`")]
+    /// or [`TCellOwner::try_new`] instead.
     #[cfg(any(feature = "std", feature = "exclusion-set"))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "std", feature = "exclusion-set"))))]
     pub fn new() -> Self {
@@ -91,7 +94,7 @@ impl<Q: 'static> TCellOwner<Q> {
     /// Same as [`TCellOwner::new`], except if another `TCellOwner`
     /// of this type `Q` already exists, this returns `None` instead
     /// of panicking.
-    #[cfg(all(not(feature = "exclusion-set"), feature = "std"))]
+    #[cfg(all(feature = "std", not(feature = "exclusion-set")))]
     pub fn try_new() -> Option<Self> {
         if SINGLETON_CHECK.lock().unwrap().insert(TypeId::of::<Q>()) {
             Some(Self { typ: PhantomData })
@@ -125,7 +128,7 @@ impl<Q: 'static> TCellOwner<Q> {
     /// a `Mutex` or `RwLock` to control access.  This call is
     /// intended to help when several independent tests need to run
     /// which use the same marker type internally.
-    #[cfg(all(not(feature = "exclusion-set"), feature = "std"))]
+    #[cfg(all(feature = "std", not(feature = "exclusion-set")))]
     pub fn wait_for_new() -> Self {
         // Lock the HashSet mutex.
         let hashset_guard = SINGLETON_CHECK.lock().unwrap();
@@ -338,7 +341,7 @@ impl<Q: 'static, T: Default + ?Sized> Default for TCell<Q, T> {
 // even though the locking mechanisms are different.
 unsafe impl<Q, T: Send + Sync + ?Sized> Sync for TCell<Q, T> {}
 
-#[cfg(test)]
+#[cfg(all(test, any(feature = "std", feature = "exclusion-set")))]
 mod tests {
     use super::{TCell, TCellOwner};
     #[test]

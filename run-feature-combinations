@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# You can't have 'std' without 'alloc', since 'std' depends on it
+for a in '' 'alloc,' 'std,alloc,'; do
+    # These two affect independent sections of code so can be tested
+    # together
+    for b in '' 'generativity,exclusion-set,'; do
+        all="$a$b"
+        case "$all" in
+            *exclusion-set*) MSRV=1.65;;
+            *) MSRV=1.60;;
+        esac
+        echo "$MSRV ${all%,}"
+    done
+done
