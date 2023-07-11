@@ -1,9 +1,13 @@
+use core::any::TypeId;
+use core::cell::UnsafeCell;
+use core::marker::PhantomData;
+#[cfg(all(feature = "std", not(feature = "exclusion-set")))]
 use once_cell::sync::Lazy;
-use std::any::TypeId;
-use std::cell::UnsafeCell;
-use std::collections::HashSet;
-use std::marker::PhantomData;
-use std::sync::{Condvar, Mutex};
+#[cfg(all(feature = "std", not(feature = "exclusion-set")))]
+use std::{
+    collections::HashSet,
+    sync::{Condvar, Mutex},
+};
 
 use super::Invariant;
 
