@@ -1,6 +1,10 @@
 #!/bin/bash
 
-cargo test &&
-cargo test --features generativity &&
-cargo test --no-default-features --features alloc &&
-cargo test --no-default-features
+./run-feature-combinations |
+    while read msrv features
+    do
+        echo "=== Features: $features"
+        cargo test --no-default-features --features "$features" || exit 1
+    done
+
+echo SUCCESS

@@ -192,12 +192,12 @@
 //! - Pro: Compile-time borrowing checks
 //! - Pro: No overhead at runtime for borrowing or ownership checks
 //! - Pro: No cell space overhead
+//! - Pro: `no_std` support (via external crate)
 //! - Con: Can only borrow up to 3 objects at a time
 //! - Con: Uses singletons, either per-process (TCell) or per-thread
 //! (TLCell), meaning only one owner is allowed per thread or process
 //! per marker type.  Code intended to be nested on the call stack
 //! must be parameterised with an external marker type.
-//! - Con: Currently requires `std`
 //!
 //! [`LCell`] pros and cons:
 //!
@@ -313,16 +313,21 @@
 //!
 //! # `no_std` support
 //!
-//! There are three levels at which **qcell** crate can be built:
+//! There are four levels at which **qcell** crate can be built:
 //!
 //! - Full `std` support, which is the default
+//!
+//! - `no_std` with
+//! [**exclusion-set**](https://crates.io/crates/exclusion-set), when
+//! built with `--no-default-features` and `--features exclusion-set`
 //!
 //! - `no_std` with `alloc`, when built with `--no-default-features`
 //! and `--features alloc`
 //!
 //! - `no_std` without `alloc`, when built with `--no-default-features`
 //!
-//! Both [`QCell`] and [`LCell`] support all three levels.
+//! Both [`QCell`] and [`LCell`] support all four levels, and
+//! [`TCell`] is also available for the first two.
 //!
 //! # Origin of names
 //!
@@ -365,7 +370,6 @@ extern crate alloc;
 
 mod lcell;
 mod qcell;
-#[cfg(feature = "std")]
 mod tcell;
 #[cfg(feature = "std")]
 mod tlcell;
@@ -411,12 +415,14 @@ pub use crate::qcell::QCell;
 pub use crate::qcell::QCellOwnerID;
 pub use crate::qcell::QCellOwnerPinned;
 pub use crate::qcell::QCellOwnerSeq;
+pub use crate::tcell::TCell;
+pub use crate::tcell::TCellOwner;
 
 #[cfg(feature = "alloc")]
 pub use crate::qcell::QCellOwner;
 
 #[cfg(feature = "std")]
-pub use crate::{tcell::TCell, tcell::TCellOwner, tlcell::TLCell, tlcell::TLCellOwner};
+pub use crate::{tlcell::TLCell, tlcell::TLCellOwner};
 
 // Static assertions on traits
 #[cfg(test)]

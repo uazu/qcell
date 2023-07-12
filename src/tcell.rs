@@ -1,26 +1,35 @@
+#[cfg(any(feature = "std", feature = "exclusion-set"))]
+use core::any::TypeId;
+use core::cell::UnsafeCell;
+use core::marker::PhantomData;
+#[cfg(all(feature = "std", not(feature = "exclusion-set")))]
 use once_cell::sync::Lazy;
-use std::any::TypeId;
-use std::cell::UnsafeCell;
-use std::collections::HashSet;
-use std::marker::PhantomData;
-use std::sync::{Condvar, Mutex};
+#[cfg(all(feature = "std", not(feature = "exclusion-set")))]
+use std::{
+    collections::HashSet,
+    sync::{Condvar, Mutex},
+};
 
 use super::Invariant;
 
+#[cfg(all(feature = "std", not(feature = "exclusion-set")))]
 static SINGLETON_CHECK: Lazy<Mutex<HashSet<TypeId>>> = Lazy::new(|| Mutex::new(HashSet::new()));
+#[cfg(all(feature = "std", not(feature = "exclusion-set")))]
 static SINGLETON_CHECK_CONDVAR: Lazy<Condvar> = Lazy::new(Condvar::new);
+#[cfg(feature = "exclusion-set")]
+static SINGLETON_CHECK_SET: exclusion_set::Set<TypeId> = exclusion_set::Set::new();
 
 /// Borrowing-owner of zero or more [`TCell`](struct.TCell.html)
 /// instances.
 ///
 /// See [crate documentation](index.html).
-#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 pub struct TCellOwner<Q: 'static> {
     // Allow Send and Sync, and Q is invariant
     typ: PhantomData<Invariant<Q>>,
 }
 
 impl<Q: 'static> Drop for TCellOwner<Q> {
+    #[cfg(all(feature = "std", not(feature = "exclusion-set")))]
     fn drop(&mut self) {
         // Remove the TypeId of Q from the HashSet, indicating that
         // no more instances of TCellOwner<Q> exist.
@@ -30,8 +39,28 @@ impl<Q: 'static> Drop for TCellOwner<Q> {
         // to check if their Q was removed from the HashSet.
         SINGLETON_CHECK_CONDVAR.notify_all();
     }
+
+    #[cfg(feature = "exclusion-set")]
+    fn drop(&mut self) {
+        // Remove the TypeId of Q from the Set, indicating that
+        // no more instances of TCellOwner<Q> exist.
+        // SAFETY: the precondition of remove is satisfied since
+        // this can be the only TCellOwner for a given Q.
+        unsafe {
+            SINGLETON_CHECK_SET.remove(&TypeId::of::<Q>());
+        }
+    }
+
+    #[cfg(not(any(feature = "std", feature = "exclusion-set")))]
+    fn drop(&mut self) {
+        // constructors should be unavailable with this feature set, so the
+        // destructor should be unreachable
+        unreachable!()
+    }
 }
 
+#[cfg(any(feature = "std", feature = "exclusion-set"))]
+#[cfg_attr(docsrs, doc(cfg(any(feature = "std", feature = "exclusion-set"))))]
 impl<Q: 'static> Default for TCellOwner<Q> {
     fn default() -> Self {
         TCellOwner::new()
@@ -49,7 +78,11 @@ impl<Q: 'static> TCellOwner<Q> {
     /// specified otherwise (using e.g. `RUST_TEST_THREADS`), so
     /// this panic may be more easy to trigger than you might think.
     /// To avoid this panic, consider using the methods
-    /// [`TCellOwner::wait_for_new`] or [`TCellOwner::try_new`] instead.
+    #[cfg_attr(feature = "std", doc = "[`TCellOwner::wait_for_new`]")]
+    #[cfg_attr(not(feature = "std"), doc = "`TCellOwner::wait_for_new`")]
+    /// or [`TCellOwner::try_new`] instead.
+    #[cfg(any(feature = "std", feature = "exclusion-set"))]
+    #[cfg_attr(docsrs, doc(cfg(any(feature = "std", feature = "exclusion-set"))))]
     pub fn new() -> Self {
         if let Some(owner) = TCellOwner::try_new() {
             owner
@@ -61,8 +94,22 @@ impl<Q: 'static> TCellOwner<Q> {
     /// Same as [`TCellOwner::new`], except if another `TCellOwner`
     /// of this type `Q` already exists, this returns `None` instead
     /// of panicking.
+    #[cfg(all(feature = "std", not(feature = "exclusion-set")))]
     pub fn try_new() -> Option<Self> {
         if SINGLETON_CHECK.lock().unwrap().insert(TypeId::of::<Q>()) {
+            Some(Self { typ: PhantomData })
+        } else {
+            None
+        }
+    }
+
+    /// Same as [`TCellOwner::new`], except if another `TCellOwner`
+    /// of this type `Q` already exists, this returns `None` instead
+    /// of panicking.
+    #[cfg(feature = "exclusion-set")]
+    #[cfg_attr(docsrs, doc(cfg(any(feature = "std", feature = "exclusion-set"))))]
+    pub fn try_new() -> Option<Self> {
+        if SINGLETON_CHECK_SET.try_insert(TypeId::of::<Q>()) {
             Some(Self { typ: PhantomData })
         } else {
             None
@@ -81,6 +128,7 @@ impl<Q: 'static> TCellOwner<Q> {
     /// a `Mutex` or `RwLock` to control access.  This call is
     /// intended to help when several independent tests need to run
     /// which use the same marker type internally.
+    #[cfg(all(feature = "std", not(feature = "exclusion-set")))]
     pub fn wait_for_new() -> Self {
         // Lock the HashSet mutex.
         let hashset_guard = SINGLETON_CHECK.lock().unwrap();
@@ -99,6 +147,28 @@ impl<Q: 'static> TCellOwner<Q> {
         // TypeId of Q from the HashSet, and notify all waiting threads.
         let inserted = hashset_guard.insert(TypeId::of::<Q>());
         assert!(inserted);
+        Self { typ: PhantomData }
+    }
+
+    /// Same as [`TCellOwner::new`], except if another `TCellOwner`
+    /// of this type `Q` already exists, this function blocks the thread
+    /// until that other instance is dropped.  This will of course deadlock
+    /// if that other instance is owned by the same thread.
+    ///
+    /// Note that owners are expected to be relatively long-lived.  If
+    /// you need to access cells associated with a given marker type
+    /// from several different threads, the most efficient pattern is
+    /// to have a single long-lived owner shared between threads, with
+    /// a `Mutex` or `RwLock` to control access.  This call is
+    /// intended to help when several independent tests need to run
+    /// which use the same marker type internally.
+    #[cfg(all(feature = "std", feature = "exclusion-set"))]
+    #[cfg_attr(
+        docsrs,
+        doc(cfg(any(feature = "std", all(feature = "exclusion-set", feature = "std"))))
+    )]
+    pub fn wait_for_new() -> Self {
+        SINGLETON_CHECK_SET.wait_to_insert(TypeId::of::<Q>());
         Self { typ: PhantomData }
     }
 
@@ -177,7 +247,6 @@ impl<Q: 'static> TCellOwner<Q> {
 ///
 /// [`TCellOwner`]: struct.TCellOwner.html
 #[repr(transparent)]
-#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 pub struct TCell<Q, T: ?Sized> {
     // Use Invariant<Q> for invariant parameter
     owner: PhantomData<Invariant<Q>>,
@@ -272,7 +341,7 @@ impl<Q: 'static, T: Default + ?Sized> Default for TCell<Q, T> {
 // even though the locking mechanisms are different.
 unsafe impl<Q, T: Send + Sync + ?Sized> Sync for TCell<Q, T> {}
 
-#[cfg(test)]
+#[cfg(all(test, any(feature = "std", feature = "exclusion-set")))]
 mod tests {
     use super::{TCell, TCellOwner};
     #[test]
@@ -344,6 +413,7 @@ mod tests {
         let _ = rx.recv();
     }
 
+    #[cfg(feature = "std")]
     #[test]
     fn tcell_wait_for_new_in_100_threads() {
         use rand::Rng;
@@ -379,6 +449,7 @@ mod tests {
         assert_eq!(*owner.ro(&*cell_arc), 100);
     }
 
+    #[cfg(feature = "std")]
     #[test]
     fn tcell_wait_for_new_timeout() {
         fn assert_time_out<F>(d: std::time::Duration, f: F)

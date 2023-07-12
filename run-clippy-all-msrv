@@ -1,0 +1,8 @@
+#!/bin/bash
+
+./run-feature-combinations |
+    while read msrv features
+    do
+        echo "=== $msrv: Features: $features"
+        cargo +$msrv clippy --no-default-features --features "$features" || exit 1
+    done
