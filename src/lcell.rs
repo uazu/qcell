@@ -12,8 +12,8 @@ type Id<'id> = PhantomData<Invariant<&'id ()>>;
 /// `for<'id>`.  This allows creating an invariant lifetime within a
 /// closure, which is different to any other Rust lifetime thanks to
 /// the techniques explained in various places: section 6.3 of [this
-/// thesis from
-/// Gankra](https://raw.githubusercontent.com/Gankra/thesis/master/thesis.pdf),
+/// thesis from Gankra (formerly
+/// Gankro)](https://raw.githubusercontent.com/Gankra/thesis/master/thesis.pdf),
 /// [this Reddit
 /// post](https://www.reddit.com/r/rust/comments/3oo0oe/sound_unchecked_indexing_with_lifetimebased_value/),
 /// and [this Rust playground

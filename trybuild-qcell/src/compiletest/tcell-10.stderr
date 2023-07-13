@@ -1,6 +1,9 @@
 error[E0505]: cannot move out of `owner` because it is borrowed
   --> src/compiletest/tcell-10.rs:12:24
    |
+9  |     let owner = ACellOwner::new();
+   |         ----- binding `owner` declared here
+10 |     let cell = ACell::new(100);
 11 |     let val_ref = owner.ro(&cell);
    |                   --------------- borrow of `owner` occurs here
 12 |     std::thread::spawn(move || {
@@ -14,6 +17,8 @@ error[E0505]: cannot move out of `owner` because it is borrowed
 error[E0505]: cannot move out of `cell` because it is borrowed
   --> src/compiletest/tcell-10.rs:12:24
    |
+10 |     let cell = ACell::new(100);
+   |         ---- binding `cell` declared here
 11 |     let val_ref = owner.ro(&cell);
    |                            ----- borrow of `cell` occurs here
 12 |     std::thread::spawn(move || {

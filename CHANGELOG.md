@@ -4,6 +4,16 @@ This project follows Rust semantic versioning.
 
 <!-- see keepachangelog.com for format ideas -->
 
+## 0.5.4 (2023-07-13)
+
+### Added
+
+- `no_std` support for `TCell`, contributed by [Violet
+  Leonard](https://github.com/geeklint).
+- `Default` for `TCell`, `TLCell` and `LCell`
+- Formalize MSRV of 1.60, and test
+
+
 ## 0.5.3 (2023-01-15)
 
 ### Added

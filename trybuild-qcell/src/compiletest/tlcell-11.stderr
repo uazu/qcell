@@ -1,15 +1,27 @@
 error[E0277]: `*const ()` cannot be shared between threads safely
- --> src/compiletest/tlcell-11.rs:8:15
-  |
-8 |     is_sync::<TLCellOwner<Marker>>();  // Compile fail
-  |               ^^^^^^^^^^^^^^^^^^^ `*const ()` cannot be shared between threads safely
-  |
-  = help: within `TLCellOwner<Marker>`, the trait `Sync` is not implemented for `*const ()`
-  = note: required because it appears within the type `qcell::tlcell::NotSendOrSync`
-  = note: required because it appears within the type `PhantomData<qcell::tlcell::NotSendOrSync>`
-  = note: required because it appears within the type `TLCellOwner<Marker>`
+   --> src/compiletest/tlcell-11.rs:8:15
+    |
+8   |     is_sync::<TLCellOwner<Marker>>();  // Compile fail
+    |               ^^^^^^^^^^^^^^^^^^^ `*const ()` cannot be shared between threads safely
+    |
+    = help: within `TLCellOwner<Marker>`, the trait `Sync` is not implemented for `*const ()`
+note: required because it appears within the type `NotSendOrSync`
+   --> $QCELL/src/tlcell.rs
+    |
+    | struct NotSendOrSync(*const ());
+    |        ^^^^^^^^^^^^^
+note: required because it appears within the type `PhantomData<NotSendOrSync>`
+   --> $RUST/core/src/marker.rs
+    |
+    | pub struct PhantomData<T: ?Sized>;
+    |            ^^^^^^^^^^^
+note: required because it appears within the type `TLCellOwner<Marker>`
+   --> $QCELL/src/tlcell.rs
+    |
+    | pub struct TLCellOwner<Q: 'static> {
+    |            ^^^^^^^^^^^
 note: required by a bound in `is_sync`
- --> src/compiletest/tlcell-11.rs:7:19
-  |
-7 |     fn is_sync<T: Sync>() {}
-  |                   ^^^^ required by this bound in `is_sync`
+   --> src/compiletest/tlcell-11.rs:7:19
+    |
+7   |     fn is_sync<T: Sync>() {}
+    |                   ^^^^ required by this bound in `is_sync`

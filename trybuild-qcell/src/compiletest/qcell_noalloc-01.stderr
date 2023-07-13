@@ -1,13 +1,18 @@
 error[E0277]: `PhantomPinned` cannot be unpinned
- --> src/compiletest/qcell_noalloc-01.rs:7:16
-  |
-7 |     is_unpin::<QCellOwnerPinned>();
-  |                ^^^^^^^^^^^^^^^^ within `QCellOwnerPinned`, the trait `Unpin` is not implemented for `PhantomPinned`
-  |
-  = note: consider using `Box::pin`
-  = note: required because it appears within the type `QCellOwnerPinned`
+   --> src/compiletest/qcell_noalloc-01.rs:7:16
+    |
+7   |     is_unpin::<QCellOwnerPinned>();
+    |                ^^^^^^^^^^^^^^^^ within `QCellOwnerPinned`, the trait `Unpin` is not implemented for `PhantomPinned`
+    |
+    = note: consider using the `pin!` macro
+            consider using `Box::pin` if you need to access the pinned value outside of the current scope
+note: required because it appears within the type `QCellOwnerPinned`
+   --> $QCELL/src/qcell.rs
+    |
+    | pub struct QCellOwnerPinned {
+    |            ^^^^^^^^^^^^^^^^
 note: required by a bound in `is_unpin`
- --> src/compiletest/qcell_noalloc-01.rs:6:20
-  |
-6 |     fn is_unpin<T: Unpin>() {}
-  |                    ^^^^^ required by this bound in `is_unpin`
+   --> src/compiletest/qcell_noalloc-01.rs:6:20
+    |
+6   |     fn is_unpin<T: Unpin>() {}
+    |                    ^^^^^ required by this bound in `is_unpin`

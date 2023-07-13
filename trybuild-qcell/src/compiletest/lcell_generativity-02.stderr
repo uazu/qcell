@@ -2,7 +2,10 @@ error[E0597]: `tag` does not live long enough
   --> src/compiletest/lcell_generativity-02.rs:8:5
    |
 8  |     make_guard!(guard2);
-   |     ^^^^^^^^^^^^^^^^^^^ borrowed value does not live long enough
+   |     ^^^^^^^^^^^^^^^^^^^
+   |     |
+   |     borrowed value does not live long enough
+   |     binding `tag` declared here
 ...
 15 | }
    | -

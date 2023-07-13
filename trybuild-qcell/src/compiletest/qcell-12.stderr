@@ -1,14 +1,22 @@
 error[E0277]: `Rc<()>` cannot be sent between threads safely
- --> src/compiletest/qcell-12.rs:8:15
-  |
-8 |     is_send::<QCell<Rc<()>>>();  // Compile fail
-  |               ^^^^^^^^^^^^^ `Rc<()>` cannot be sent between threads safely
-  |
-  = help: within `QCell<Rc<()>>`, the trait `Send` is not implemented for `Rc<()>`
-  = note: required because it appears within the type `UnsafeCell<Rc<()>>`
-  = note: required because it appears within the type `QCell<Rc<()>>`
+    --> src/compiletest/qcell-12.rs:8:15
+     |
+8    |     is_send::<QCell<Rc<()>>>();  // Compile fail
+     |               ^^^^^^^^^^^^^ `Rc<()>` cannot be sent between threads safely
+     |
+     = help: within `QCell<Rc<()>>`, the trait `Send` is not implemented for `Rc<()>`
+note: required because it appears within the type `UnsafeCell<Rc<()>>`
+    --> $RUST/core/src/cell.rs
+     |
+     | pub struct UnsafeCell<T: ?Sized> {
+     |            ^^^^^^^^^^
+note: required because it appears within the type `QCell<Rc<()>>`
+    --> $QCELL/src/qcell.rs
+     |
+     | pub struct QCell<T: ?Sized> {
+     |            ^^^^^
 note: required by a bound in `is_send`
- --> src/compiletest/qcell-12.rs:7:19
-  |
-7 |     fn is_send<T: Send>() {}
-  |                   ^^^^ required by this bound in `is_send`
+    --> src/compiletest/qcell-12.rs:7:19
+     |
+7    |     fn is_send<T: Send>() {}
+     |                   ^^^^ required by this bound in `is_send`

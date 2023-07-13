@@ -8,5 +8,6 @@ error[E0277]: the trait bound `NoDefault: Default` is not satisfied
    = note: required for `TCell<Marker, NoDefault>` to implement `Default`
 help: consider annotating `NoDefault` with `#[derive(Default)]`
    |
-9  |     #[derive(Default)]
+9  +     #[derive(Default)]
+10 |     struct NoDefault(i32);
    |

@@ -1,6 +1,9 @@
 error[E0505]: cannot move out of `owner` because it is borrowed
   --> src/compiletest/lcell_generativity-10.rs:10:22
    |
+7  |     let mut owner = LCellOwner::new(guard);
+   |         --------- binding `owner` declared here
+8  |     let cell = LCell::new(100);
 9  |     let val_ref = owner.ro(&cell);
    |                   --------------- borrow of `owner` occurs here
 10 |     crossbeam::scope(move |s| {
@@ -14,6 +17,8 @@ error[E0505]: cannot move out of `owner` because it is borrowed
 error[E0505]: cannot move out of `cell` because it is borrowed
   --> src/compiletest/lcell_generativity-10.rs:10:22
    |
+8  |     let cell = LCell::new(100);
+   |         ---- binding `cell` declared here
 9  |     let val_ref = owner.ro(&cell);
    |                            ----- borrow of `cell` occurs here
 10 |     crossbeam::scope(move |s| {

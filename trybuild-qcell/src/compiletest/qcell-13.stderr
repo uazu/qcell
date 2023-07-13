@@ -1,26 +1,37 @@
 error[E0277]: `Rc<i32>` cannot be sent between threads safely
-   --> src/compiletest/qcell-13.rs:11:24
-    |
-11  |       std::thread::spawn(move || {    // Compile fail
-    |       ------------------ ^------
-    |       |                  |
-    |  _____|__________________within this `[closure@$DIR/src/compiletest/qcell-13.rs:11:24: 11:31]`
-    | |     |
-    | |     required by a bound introduced by this call
-12  | |         assert_eq!(100, **owner.ro(&cell));
-13  | |     }).join();
-    | |_____^ `Rc<i32>` cannot be sent between threads safely
-    |
-    = help: within `[closure@$DIR/src/compiletest/qcell-13.rs:11:24: 11:31]`, the trait `Send` is not implemented for `Rc<i32>`
-    = note: required because it appears within the type `UnsafeCell<Rc<i32>>`
-    = note: required because it appears within the type `QCell<Rc<i32>>`
+    --> src/compiletest/qcell-13.rs:11:24
+     |
+11   |       std::thread::spawn(move || {    // Compile fail
+     |       ------------------ ^------
+     |       |                  |
+     |  _____|__________________within this `[closure@$DIR/src/compiletest/qcell-13.rs:11:24: 11:31]`
+     | |     |
+     | |     required by a bound introduced by this call
+12   | |         assert_eq!(100, **owner.ro(&cell));
+13   | |     }).join();
+     | |_____^ `Rc<i32>` cannot be sent between threads safely
+     |
+     = help: within `[closure@$DIR/src/compiletest/qcell-13.rs:11:24: 11:31]`, the trait `Send` is not implemented for `Rc<i32>`
+note: required because it appears within the type `UnsafeCell<Rc<i32>>`
+    --> $RUST/core/src/cell.rs
+     |
+     | pub struct UnsafeCell<T: ?Sized> {
+     |            ^^^^^^^^^^
+note: required because it appears within the type `QCell<Rc<i32>>`
+    --> $QCELL/src/qcell.rs
+     |
+     | pub struct QCell<T: ?Sized> {
+     |            ^^^^^
 note: required because it's used within this closure
-   --> src/compiletest/qcell-13.rs:11:24
-    |
-11  |     std::thread::spawn(move || {    // Compile fail
-    |                        ^^^^^^^
+    --> src/compiletest/qcell-13.rs:11:24
+     |
+11   |     std::thread::spawn(move || {    // Compile fail
+     |                        ^^^^^^^
 note: required by a bound in `spawn`
-   --> $RUST/std/src/thread/mod.rs
-    |
-    |     F: Send + 'static,
-    |        ^^^^ required by this bound in `spawn`
+    --> $RUST/std/src/thread/mod.rs
+     |
+     | pub fn spawn<F, T>(f: F) -> JoinHandle<T>
+     |        ----- required by a bound in this function
+...
+     |     F: Send + 'static,
+     |        ^^^^ required by this bound in `spawn`

@@ -1,6 +1,9 @@
 error[E0505]: cannot move out of `c1` because it is borrowed
   --> src/compiletest/tlcell-07.rs:15:10
    |
+11 |     let c1 = Rc::new(ACell::new(100u32));
+   |         -- binding `c1` declared here
+...
 14 |     let c1ref = owner.ro(&c1);
    |                          --- borrow of `c1` occurs here
 15 |     drop(c1);    // Compile error

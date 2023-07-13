@@ -7,6 +7,7 @@ error[E0277]: `Cell<i32>` cannot be shared between threads safely
     |                        required by a bound introduced by this call
     |
     = help: the trait `Sync` is not implemented for `Cell<i32>`
+    = note: if you want to do aliasing and mutation between multiple threads, use `std::sync::RwLock` or `std::sync::atomic::AtomicI32` instead
     = note: required for `LCell<'_, Cell<i32>>` to implement `Sync`
     = note: required for `&LCell<'_, Cell<i32>>` to implement `Send`
 note: required because it's used within this closure
@@ -15,7 +16,10 @@ note: required because it's used within this closure
 13  |         let handle = s.spawn(|_| owner.ro(&cell).set(200));
     |                              ^^^
 note: required by a bound in `crossbeam::thread::Scope::<'env>::spawn`
-   --> $CARGO/crossbeam-utils-0.7.2/src/thread.rs
+   --> /home/jim/.cargo/registry/src/index.crates.io-6f17d22bba15001f/crossbeam-utils-0.7.2/src/thread.rs:243:12
     |
-    |         F: Send + 'env,
-    |            ^^^^ required by this bound in `crossbeam::thread::Scope::<'env>::spawn`
+240 |     pub fn spawn<'scope, F, T>(&'scope self, f: F) -> ScopedJoinHandle<'scope, T>
+    |            ----- required by a bound in this associated function
+...
+243 |         F: Send + 'env,
+    |            ^^^^ required by this bound in `Scope::<'env>::spawn`

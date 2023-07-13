@@ -8,5 +8,6 @@ error[E0277]: the trait bound `NoDefault: Default` is not satisfied
   = note: required for `LCell<'_, NoDefault>` to implement `Default`
 help: consider annotating `NoDefault` with `#[derive(Default)]`
   |
-7 |         #[derive(Default)]
+7 +         #[derive(Default)]
+8 |         struct NoDefault(i32);
   |

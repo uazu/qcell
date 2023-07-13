@@ -1,14 +1,22 @@
 error[E0277]: `Rc<()>` cannot be sent between threads safely
- --> src/compiletest/tlcell-14.rs:9:15
-  |
-9 |     is_send::<TLCell<Marker, Rc<()>>>();  // Compile fail
-  |               ^^^^^^^^^^^^^^^^^^^^^^ `Rc<()>` cannot be sent between threads safely
-  |
-  = help: within `TLCell<Marker, Rc<()>>`, the trait `Send` is not implemented for `Rc<()>`
-  = note: required because it appears within the type `UnsafeCell<Rc<()>>`
-  = note: required because it appears within the type `TLCell<Marker, Rc<()>>`
+    --> src/compiletest/tlcell-14.rs:9:15
+     |
+9    |     is_send::<TLCell<Marker, Rc<()>>>();  // Compile fail
+     |               ^^^^^^^^^^^^^^^^^^^^^^ `Rc<()>` cannot be sent between threads safely
+     |
+     = help: within `TLCell<Marker, Rc<()>>`, the trait `Send` is not implemented for `Rc<()>`
+note: required because it appears within the type `UnsafeCell<Rc<()>>`
+    --> $RUST/core/src/cell.rs
+     |
+     | pub struct UnsafeCell<T: ?Sized> {
+     |            ^^^^^^^^^^
+note: required because it appears within the type `TLCell<Marker, Rc<()>>`
+    --> $QCELL/src/tlcell.rs
+     |
+     | pub struct TLCell<Q, T: ?Sized> {
+     |            ^^^^^^
 note: required by a bound in `is_send`
- --> src/compiletest/tlcell-14.rs:8:19
-  |
-8 |     fn is_send<T: Send>() {}
-  |                   ^^^^ required by this bound in `is_send`
+    --> src/compiletest/tlcell-14.rs:8:19
+     |
+8    |     fn is_send<T: Send>() {}
+     |                   ^^^^ required by this bound in `is_send`

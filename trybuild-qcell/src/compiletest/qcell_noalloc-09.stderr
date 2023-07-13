@@ -1,6 +1,9 @@
 error[E0505]: cannot move out of `c1` because it is borrowed
   --> src/compiletest/qcell_noalloc-09.rs:13:10
    |
+10 |     let c1 = Rc::new(owner.as_ref().cell(100u32));
+   |         -- binding `c1` declared here
+11 |     let c2 = Rc::new(owner.as_ref().cell(200u32));
 12 |     let c1ref = owner.as_ref().ro(&c1);
    |                                   --- borrow of `c1` occurs here
 13 |     drop(c1);    // Compile error
