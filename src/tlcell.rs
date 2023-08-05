@@ -210,6 +210,11 @@ impl<Q, T: ?Sized> TLCell<Q, T> {
     pub fn get_mut(&mut self) -> &mut T {
         self.value.get_mut()
     }
+
+    #[inline]
+    pub fn ptr(&self) -> *mut T {
+        self.value.get()
+    }
 }
 
 impl<Q: 'static, T: Default + ?Sized> Default for TLCell<Q, T> {

@@ -316,6 +316,11 @@ impl<Q, T: ?Sized> TCell<Q, T> {
     pub fn get_mut(&mut self) -> &mut T {
         self.value.get_mut()
     }
+
+    #[inline]
+    pub fn ptr(&self) -> *mut T {
+        self.value.get()
+    }
 }
 
 impl<Q: 'static, T: Default + ?Sized> Default for TCell<Q, T> {

@@ -219,6 +219,11 @@ impl<'id, T: ?Sized> LCell<'id, T> {
     pub fn get_mut(&mut self) -> &mut T {
         self.value.get_mut()
     }
+
+    #[inline]
+    pub fn ptr(&self) -> *mut T {
+        self.value.get()
+    }
 }
 
 impl<'id, T: Default + ?Sized> Default for LCell<'id, T> {
