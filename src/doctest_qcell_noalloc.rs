@@ -24,10 +24,10 @@
 //! ```compile_fail
 //!# use qcell::{QCell, QCellOwnerPinned};
 //!# use std::rc::Rc;
-//!# use pin_utils::pin_mut;
+//!# use std::pin::pin;
 //! let mut owner1 = QCellOwnerPinned::new();
 //! let mut owner2 = owner1;
-//! pin_mut!(owner1);  // Compile fail
+//! let mut owner1 = pin!(owner1);  // Compile fail
 //! let rc = Rc::new(owner1.as_ref().cell(100u32));
 //! ```
 //!
@@ -36,9 +36,8 @@
 //! ```compile_fail
 //!# use qcell::{QCell, QCellOwnerPinned};
 //!# use std::rc::Rc;
-//!# use pin_utils::pin_mut;
-//! let mut owner1 = QCellOwnerPinned::new();
-//! pin_mut!(owner1);
+//!# use std::pin::pin;
+//! let mut owner1 = pin!(QCellOwnerPinned::new());
 //! let mut owner2 = owner1;
 //! let rc = Rc::new(owner1.as_ref().cell(100u32));  // Compile fail
 //! ```
@@ -57,9 +56,8 @@
 //! ```compile_fail
 //!# use qcell::{QCell, QCellOwnerPinned};
 //!# use std::rc::Rc;
-//!# use pin_utils::pin_mut;
-//! let mut owner1 = QCellOwnerPinned::new();
-//! pin_mut!(owner1);
+//!# use std::pin::pin;
+//! let mut owner1 = pin!(QCellOwnerPinned::new());
 //! let owner2 = owner1.clone();  // Compile fail
 //! ```
 //!
@@ -68,11 +66,9 @@
 //! ```should_panic
 //!# use qcell::{QCell, QCellOwnerPinned};
 //!# use std::rc::Rc;
-//!# use pin_utils::pin_mut;
-//! let mut owner1 = QCellOwnerPinned::new();
-//! let mut owner2 = QCellOwnerPinned::new();
-//! pin_mut!(owner1);
-//! pin_mut!(owner2);
+//!# use std::pin::pin;
+//! let mut owner1 = pin!(QCellOwnerPinned::new());
+//! let mut owner2 = pin!(QCellOwnerPinned::new());
 //! let c1 = Rc::new(owner1.as_ref().cell(100u32));
 //!
 //! let c1ref = owner2.as_ref().ro(&c1);   // Panics here
@@ -84,11 +80,9 @@
 //! ```should_panic
 //!# use qcell::{QCell, QCellOwnerPinned};
 //!# use std::rc::Rc;
-//!# use pin_utils::pin_mut;
-//! let mut owner1 = QCellOwnerPinned::new();
-//! let mut owner2 = QCellOwnerPinned::new();
-//! pin_mut!(owner1);
-//! pin_mut!(owner2);
+//!# use std::pin::pin;
+//! let mut owner1 = pin!(QCellOwnerPinned::new());
+//! let mut owner2 = pin!(QCellOwnerPinned::new());
 //! let c1 = Rc::new(owner1.as_ref().cell(100u32));
 //!
 //! let c1mutref = owner2.as_mut().rw(&c1);    // Panics here
@@ -101,9 +95,8 @@
 //! ```compile_fail
 //!# use qcell::{QCell, QCellOwnerPinned};
 //!# use std::rc::Rc;
-//!# use pin_utils::pin_mut;
-//! let mut owner = QCellOwnerPinned::new();
-//! pin_mut!(owner);
+//!# use std::pin::pin;
+//! let mut owner = pin!(QCellOwnerPinned::new());
 //! let c1 = Rc::new(owner.as_ref().cell(100u32));
 //! let c2 = Rc::new(owner.as_ref().cell(200u32));
 //!
@@ -120,9 +113,8 @@
 //! ```
 //!# use qcell::{QCell, QCellOwnerPinned};
 //!# use std::rc::Rc;
-//!# use pin_utils::pin_mut;
-//!# let mut owner = QCellOwnerPinned::new();
-//!# pin_mut!(owner);
+//!# use std::pin::pin;
+//!# let mut owner = pin!(QCellOwnerPinned::new());
 //!# let c1 = Rc::new(owner.as_ref().cell(100u32));
 //!# let c2 = Rc::new(owner.as_ref().cell(200u32));
 //! let (c1mutref, c2mutref) = owner.as_mut().rw2(&c1, &c2);
@@ -137,9 +129,7 @@
 //! ```compile_fail
 //!# use qcell::{QCell, QCellOwnerPinned};
 //!# use std::rc::Rc;
-//!# use pin_utils::pin_mut;
-//!# let mut owner = QCellOwnerPinned::new();
-//!# pin_mut!(owner);
+//!# let mut owner = pin!(QCellOwnerPinned::new());
 //!# let c1 = Rc::new(owner.as_ref().cell(100u32));
 //!# let c2 = Rc::new(owner.as_ref().cell(200u32));
 //! let c1ref = owner.as_ref().ro(&c1);
@@ -152,9 +142,8 @@
 //! ```compile_fail
 //!# use qcell::{QCell, QCellOwnerPinned};
 //!# use std::rc::Rc;
-//!# use pin_utils::pin_mut;
-//!# let mut owner = QCellOwnerPinned::new();
-//!# pin_mut!(owner);
+//!# use std::pin::pin;
+//!# let mut owner = pin!(QCellOwnerPinned::new());
 //!# let c1 = Rc::new(owner.as_ref().cell(100u32));
 //!# let c2 = Rc::new(owner.as_ref().cell(200u32));
 //! let c1mutref = owner.as_mut().rw(&c1);
@@ -167,9 +156,8 @@
 //! ```
 //!# use qcell::{QCell, QCellOwnerPinned};
 //!# use std::rc::Rc;
-//!# use pin_utils::pin_mut;
-//!# let mut owner = QCellOwnerPinned::new();
-//!# pin_mut!(owner);
+//!# use std::pin::pin;
+//!# let mut owner = pin!(QCellOwnerPinned::new());
 //!# let c1 = Rc::new(owner.as_ref().cell(100u32));
 //!# let c2 = Rc::new(owner.as_ref().cell(200u32));
 //! let c1ref = owner.as_ref().ro(&c1);
@@ -184,9 +172,8 @@
 //! ```compile_fail
 //!# use qcell::{QCell, QCellOwnerPinned};
 //!# use std::rc::Rc;
-//!# use pin_utils::pin_mut;
-//!# let mut owner = QCellOwnerPinned::new();
-//!# pin_mut!(owner);
+//!# use std::pin::pin;
+//!# let mut owner = pin!(QCellOwnerPinned::new());
 //!# let c1 = Rc::new(owner.as_ref().cell(100u32));
 //!# let c2 = Rc::new(owner.as_ref().cell(200u32));
 //! let c1ref = owner.as_ref().ro(&c1);
@@ -201,9 +188,8 @@
 //! ```compile_fail
 //!# use qcell::{QCell, QCellOwnerPinned};
 //!# use std::{rc::Rc, pin::Pin};
-//!# use pin_utils::pin_mut;
-//!# let mut owner = QCellOwnerPinned::new();
-//!# pin_mut!(owner);
+//!# use std::pin::pin;
+//!# let mut owner = pin!(QCellOwnerPinned::new());
 //!# let c1 = Rc::new(owner.as_ref().cell(100u32));
 //!# let c2 = Rc::new(owner.as_ref().cell(200u32));
 //! fn test(o: Pin<&mut QCellOwnerPinned>) {}
@@ -218,9 +204,8 @@
 //! ```compile_fail
 //!# use qcell::{QCell, QCellOwnerPinned};
 //!# use std::{rc::Rc, pin::Pin};
-//!# use pin_utils::pin_mut;
-//!# let mut owner = QCellOwnerPinned::new();
-//!# pin_mut!(owner);
+//!# use std::pin::pin;
+//!# let mut owner = pin!(QCellOwnerPinned::new());
 //!# let c1 = Rc::new(owner.as_ref().cell(100u32));
 //!# let c2 = Rc::new(owner.as_ref().cell(200u32));
 //! fn test(o: Pin<&QCellOwnerPinned>) {}
@@ -245,9 +230,8 @@
 //!
 //! ```
 //!# use qcell::{QCellOwnerPinned, QCell};
-//!# use pin_utils::pin_mut;
-//! let mut owner = QCellOwnerPinned::new();
-//! pin_mut!(owner);
+//!# use std::pin::pin;
+//! let mut owner = pin!(QCellOwnerPinned::new());
 //! let cell = owner.as_ref().cell(100_i32);
 //!
 //! *owner.as_mut().rw(&cell) += 1;

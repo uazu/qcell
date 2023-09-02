@@ -29,7 +29,6 @@ exclusion-set = { version = "0.1.2", optional = true }
 crossbeam = "0.8"
 once_cell = "1.4.0"
 pin-project = "1"
-pin-utils = "0.1"
 rand = "0.8"
 static_assertions = "1.0"
 
