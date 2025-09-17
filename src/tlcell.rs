@@ -44,14 +44,23 @@ impl<Q: 'static> TLCellOwner<Q> {
     /// valid to use in the thread it is created in, it does not
     /// support `Send` or `Sync`.
     pub fn new() -> Self {
-        SINGLETON_CHECK.with(|set| {
-            assert!(set.borrow_mut().insert(TypeId::of::<Q>()),
-                    "Illegal to create two TLCellOwner instances within the same thread with the same marker type parameter");
-        });
-        Self {
-            not_send_or_sync: PhantomData,
-            typ: PhantomData,
+        if let Some(owner) = Self::try_new() {
+            owner
+        } else {
+            panic!("Illegal to create two TLCellOwner instances within the same thread with the same marker type parameter");
         }
+    }
+
+    /// Same as [`TLCellOwner::new`], except if another `TLCellOwner`
+    /// of this type `Q` already exists in this thread, this returns
+    /// `None` instead of panicking.
+    pub fn try_new() -> Option<Self> {
+        SINGLETON_CHECK
+            .with(|set| set.borrow_mut().insert(TypeId::of::<Q>()))
+            .then_some(Self {
+                not_send_or_sync: PhantomData,
+                typ: PhantomData,
+            })
     }
 
     /// Create a new cell owned by this owner instance.  See also
@@ -244,6 +253,15 @@ mod tests {
         struct Marker2;
         let _owner1 = TLCellOwner::<Marker1>::new();
         let _owner2 = TLCellOwner::<Marker2>::new();
+    }
+
+    #[test]
+    fn tlcell_singleton_try_new() {
+        struct Marker;
+        let owner1 = TLCellOwner::<Marker>::try_new();
+        assert!(owner1.is_some());
+        let owner2 = TLCellOwner::<Marker>::try_new();
+        assert!(owner2.is_none());
     }
 
     #[test]
