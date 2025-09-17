@@ -1,10 +1,22 @@
 #!/bin/bash
 
+FAIL=/tmp/fail-flag-$$
+rm $FAIL >&/dev/null
+
 ./run-feature-combinations |
     while read msrv features
     do
         echo "=== $msrv: Features: $features"
-        cargo +$msrv test --no-default-features --features "$features" || exit 1
+        cargo +$msrv test --no-default-features --features "$features" || {
+            touch $FAIL
+            exit 1
+        }
     done
 
-echo SUCCESS
+if [ -f $FAIL ]
+then
+    echo FAILED
+    rm $FAIL
+else
+    echo SUCCESS
+fi

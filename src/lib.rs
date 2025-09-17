@@ -138,28 +138,28 @@
 //! safe:
 //!
 //! - Between the cell creation and destruction, the only way to
-//! access the contents (for read or write) is through the
-//! borrow-owner instance.  So the borrow-owner is the exclusive
-//! gatekeeper of this data.
+//!   access the contents (for read or write) is through the
+//!   borrow-owner instance.  So the borrow-owner is the exclusive
+//!   gatekeeper of this data.
 //!
 //! - The borrowing calls require a `&` owner reference to return a
-//! `&` cell reference, or a `&mut` on the owner to return a `&mut`
-//! cell reference.  So this is the same kind of borrow on both sides.
-//! The only borrow we allow for the cell is the borrow that Rust
-//! allows for the borrow-owner, and while that borrow is active, the
-//! borrow-owner and the cell's reference are blocked from further
-//! incompatible borrows.  The contents of the cells act as if they
-//! were owned by the borrow-owner, just like elements within a `Vec`.
-//! So Rust's guarantees are maintained.
+//!   `&` cell reference, or a `&mut` on the owner to return a `&mut`
+//!   cell reference.  So this is the same kind of borrow on both sides.
+//!   The only borrow we allow for the cell is the borrow that Rust
+//!   allows for the borrow-owner, and while that borrow is active, the
+//!   borrow-owner and the cell's reference are blocked from further
+//!   incompatible borrows.  The contents of the cells act as if they
+//!   were owned by the borrow-owner, just like elements within a `Vec`.
+//!   So Rust's guarantees are maintained.
 //!
 //! - The borrow-owner has no control over when the cell's contents
-//! are dropped, so the borrow-owner cannot act as a gatekeeper to the
-//! data at that point.  However this cannot clash with any active
-//! borrow on the data because whilst a borrow is active, the
-//! reference to the cell is effectively locked by Rust's borrow
-//! checking.  If this is behind an `Rc`, then it's impossible for the
-//! last strong reference to be released until that borrow is
-//! released.
+//!   are dropped, so the borrow-owner cannot act as a gatekeeper to the
+//!   data at that point.  However this cannot clash with any active
+//!   borrow on the data because whilst a borrow is active, the
+//!   reference to the cell is effectively locked by Rust's borrow
+//!   checking.  If this is behind an `Rc`, then it's impossible for the
+//!   last strong reference to be released until that borrow is
+//!   released.
 //!
 //! If you can see a flaw in this reasoning or in the code, please
 //! raise an issue, preferably with test code which demonstrates the
@@ -195,9 +195,9 @@
 //! - Pro: `no_std` support (via external crate)
 //! - Con: Can only borrow up to 3 objects at a time
 //! - Con: Uses singletons, either per-process (TCell) or per-thread
-//! (TLCell), meaning only one owner is allowed per thread or process
-//! per marker type.  Code intended to be nested on the call stack
-//! must be parameterised with an external marker type.
+//!   (TLCell), meaning only one owner is allowed per thread or process
+//!   per marker type.  Code intended to be nested on the call stack
+//!   must be parameterised with an external marker type.
 //!
 //! [`LCell`] pros and cons:
 //!
@@ -272,29 +272,29 @@
 //! Here's an overview of the reasoning:
 //!
 //! - Unlike `RefCell` these cell types may be `Sync` because mutable
-//! access is protected by the cell owner.  You can get mutable access
-//! to the cell contents only if you have mutable access to the cell
-//! owner.  (Note that `Sync` is only available where the contained
-//! type is `Send + Sync`.)
+//!   access is protected by the cell owner.  You can get mutable access
+//!   to the cell contents only if you have mutable access to the cell
+//!   owner.  (Note that `Sync` is only available where the contained
+//!   type is `Send + Sync`.)
 //!
 //! - The cell owner may be `Sync` because `Sync` only allows shared
-//! immutable access to the cell owner across threads.  So there may
-//! exist `&QCell` and `&QCellOwner` references in two threads, but
-//! only immutable access to the cell contents is possible like that,
-//! so there is no soundness issue.
+//!   immutable access to the cell owner across threads.  So there may
+//!   exist `&QCell` and `&QCellOwner` references in two threads, but
+//!   only immutable access to the cell contents is possible like that,
+//!   so there is no soundness issue.
 //!
 //! - In general `Send` is safe because that is a complete transfer of
-//! some right from one thread to another (assuming the contained type
-//! is also `Send`).
+//!   some right from one thread to another (assuming the contained type
+//!   is also `Send`).
 //!
 //! - `TLCell` is the exception because there can be a different owner
-//! with the same marker type in each thread, so owners must not be
-//! sent or shared.  Also if two threads have `&TLCell` references to
-//! the same cell then mutable references to the contained data could
-//! be created in both threads which would break Rust's guarantees.
-//! So `TLCell` cannot be `Sync`.  However it can be `Send` because in
-//! that case the right to access the data is being transferred
-//! completely from one thread to another.
+//!   with the same marker type in each thread, so owners must not be
+//!   sent or shared.  Also if two threads have `&TLCell` references to
+//!   the same cell then mutable references to the contained data could
+//!   be created in both threads which would break Rust's guarantees.
+//!   So `TLCell` cannot be `Sync`.  However it can be `Send` because in
+//!   that case the right to access the data is being transferred
+//!   completely from one thread to another.
 //!
 //! # Multi-threaded use: RwLock
 //!
@@ -318,11 +318,11 @@
 //! - Full `std` support, which is the default
 //!
 //! - `no_std` with
-//! [**exclusion-set**](https://crates.io/crates/exclusion-set), when
-//! built with `--no-default-features` and `--features exclusion-set`
+//!   [**exclusion-set**](https://crates.io/crates/exclusion-set), when
+//!   built with `--no-default-features` and `--features exclusion-set`
 //!
 //! - `no_std` with `alloc`, when built with `--no-default-features`
-//! and `--features alloc`
+//!   and `--features alloc`
 //!
 //! - `no_std` without `alloc`, when built with `--no-default-features`
 //!
@@ -407,6 +407,7 @@ pub extern crate generativity;
 //
 // Needs an abstraction as a struct, since otherwise we'll get errors
 // regarding "function pointers cannot appear in constant functions"
+#[allow(dead_code)]
 struct Invariant<T>(fn(T) -> T);
 
 pub use crate::lcell::LCell;

@@ -2,7 +2,7 @@ error[E0502]: cannot borrow `cell` as immutable because it is also borrowed as m
   --> src/compiletest/tcell-18.rs:12:31
    |
 11 |     let cell_ref = cell.get_mut();
-   |                    -------------- mutable borrow occurs here
+   |                    ---- mutable borrow occurs here
 12 |     assert_eq!(100, *owner.rw(&cell)); // Compile fail
    |                               ^^^^^ immutable borrow occurs here
 13 |     *cell_ref = 50;

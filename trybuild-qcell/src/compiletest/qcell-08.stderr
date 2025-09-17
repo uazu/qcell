@@ -5,7 +5,7 @@ error[E0505]: cannot move out of `owner` because it is borrowed
    |         ----- binding `owner` declared here
 7  |     let cell = QCell::new(&owner, 100);
 8  |     let val_ref = owner.ro(&cell);
-   |                   --------------- borrow of `owner` occurs here
+   |                   ----- borrow of `owner` occurs here
 9  |     std::thread::spawn(move || {
    |                        ^^^^^^^ move out of `owner` occurs here
 10 |         assert_eq!(*owner.ro(&cell), 100);

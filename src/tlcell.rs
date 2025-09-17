@@ -9,6 +9,7 @@ std::thread_local! {
     static SINGLETON_CHECK: std::cell::RefCell<HashSet<TypeId>> = std::cell::RefCell::new(HashSet::new());
 }
 
+#[allow(dead_code)]
 struct NotSendOrSync(*const ());
 
 /// Borrowing-owner of zero or more [`TLCell`](struct.TLCell.html)
@@ -55,12 +56,14 @@ impl<Q: 'static> TLCellOwner<Q> {
     /// of this type `Q` already exists in this thread, this returns
     /// `None` instead of panicking.
     pub fn try_new() -> Option<Self> {
-        SINGLETON_CHECK
-            .with(|set| set.borrow_mut().insert(TypeId::of::<Q>()))
-            .then_some(Self {
+        if SINGLETON_CHECK.with(|set| set.borrow_mut().insert(TypeId::of::<Q>())) {
+            Some(Self {
                 not_send_or_sync: PhantomData,
                 typ: PhantomData,
             })
+        } else {
+            None
+        }
     }
 
     /// Create a new cell owned by this owner instance.  See also
@@ -97,7 +100,7 @@ impl<Q: 'static> TLCellOwner<Q> {
         tc2: &'a TLCell<Q, U>,
     ) -> (&'a mut T, &'a mut U) {
         assert!(
-            tc1 as *const _ as *const () as usize != tc2 as *const _ as *const () as usize,
+            !core::ptr::eq(tc1 as *const _ as *const (), tc2 as *const _ as *const ()),
             "Illegal to borrow same TLCell twice with rw2()"
         );
         unsafe { (&mut *tc1.value.get(), &mut *tc2.value.get()) }
@@ -113,9 +116,9 @@ impl<Q: 'static> TLCellOwner<Q> {
         tc3: &'a TLCell<Q, V>,
     ) -> (&'a mut T, &'a mut U, &'a mut V) {
         assert!(
-            (tc1 as *const _ as *const () as usize != tc2 as *const _ as *const () as usize)
-                && (tc2 as *const _ as *const () as usize != tc3 as *const _ as *const () as usize)
-                && (tc3 as *const _ as *const () as usize != tc1 as *const _ as *const () as usize),
+            !core::ptr::eq(tc1 as *const _ as *const (), tc2 as *const _ as *const ())
+                && !core::ptr::eq(tc2 as *const _ as *const (), tc3 as *const _ as *const ())
+                && !core::ptr::eq(tc3 as *const _ as *const (), tc1 as *const _ as *const ()),
             "Illegal to borrow same TLCell twice with rw3()"
         );
         unsafe {
@@ -221,7 +224,7 @@ impl<Q, T: ?Sized> TLCell<Q, T> {
     }
 }
 
-impl<Q: 'static, T: Default + ?Sized> Default for TLCell<Q, T> {
+impl<Q: 'static, T: Default> Default for TLCell<Q, T> {
     fn default() -> Self {
         TLCell::new(T::default())
     }

@@ -115,7 +115,7 @@ impl<'id> LCellOwner<'id> {
         lc2: &'a LCell<'id, U>,
     ) -> (&'a mut T, &'a mut U) {
         assert!(
-            lc1 as *const _ as *const () as usize != lc2 as *const _ as *const () as usize,
+            !core::ptr::eq(lc1 as *const _ as *const (), lc2 as *const _ as *const ()),
             "Illegal to borrow same LCell twice with rw2()"
         );
         unsafe { (&mut *lc1.value.get(), &mut *lc2.value.get()) }
@@ -131,9 +131,9 @@ impl<'id> LCellOwner<'id> {
         lc3: &'a LCell<'id, V>,
     ) -> (&'a mut T, &'a mut U, &'a mut V) {
         assert!(
-            (lc1 as *const _ as *const () as usize != lc2 as *const _ as *const () as usize)
-                && (lc2 as *const _ as *const () as usize != lc3 as *const _ as *const () as usize)
-                && (lc3 as *const _ as *const () as usize != lc1 as *const _ as *const () as usize),
+            !core::ptr::eq(lc1 as *const _ as *const (), lc2 as *const _ as *const ())
+                && !core::ptr::eq(lc2 as *const _ as *const (), lc3 as *const _ as *const ())
+                && !core::ptr::eq(lc3 as *const _ as *const (), lc1 as *const _ as *const ()),
             "Illegal to borrow same LCell twice with rw3()"
         );
         unsafe {
@@ -221,7 +221,7 @@ impl<'id, T: ?Sized> LCell<'id, T> {
     }
 }
 
-impl<'id, T: Default + ?Sized> Default for LCell<'id, T> {
+impl<'id, T: Default> Default for LCell<'id, T> {
     fn default() -> Self {
         LCell::new(T::default())
     }

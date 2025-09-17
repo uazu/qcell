@@ -10,3 +10,8 @@ error[E0505]: cannot move out of `c1` because it is borrowed
    |          ^^ move out of `c1` occurs here
 12 |     println!("{}", *c1ref);
    |                    ------ borrow later used here
+   |
+help: clone the value to increment its reference count
+   |
+10 |     let c1ref = owner.ro(&c1.clone());
+   |                             ++++++++

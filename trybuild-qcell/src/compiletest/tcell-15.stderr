@@ -4,14 +4,14 @@ error[E0277]: `Rc<i32>` cannot be sent between threads safely
 15   |       std::thread::spawn(move || {    // Compile fail
      |       ------------------ ^------
      |       |                  |
-     |  _____|__________________within this `[closure@$DIR/src/compiletest/tcell-15.rs:15:24: 15:31]`
+     |  _____|__________________within this `{closure@$DIR/src/compiletest/tcell-15.rs:15:24: 15:31}`
      | |     |
      | |     required by a bound introduced by this call
 16   | |         assert_eq!(100, **owner.ro(&cell));
 17   | |     }).join();
      | |_____^ `Rc<i32>` cannot be sent between threads safely
      |
-     = help: within `[closure@$DIR/src/compiletest/tcell-15.rs:15:24: 15:31]`, the trait `Send` is not implemented for `Rc<i32>`
+     = help: within `{closure@$DIR/src/compiletest/tcell-15.rs:15:24: 15:31}`, the trait `Send` is not implemented for `Rc<i32>`
 note: required because it appears within the type `UnsafeCell<Rc<i32>>`
     --> $RUST/core/src/cell.rs
      |

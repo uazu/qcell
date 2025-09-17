@@ -13,16 +13,16 @@ error[E0521]: borrowed data escapes outside of closure
   = help: see <https://doc.rust-lang.org/nomicon/subtyping.html> for more information about variance
 
 error[E0521]: borrowed data escapes outside of closure
- --> src/compiletest/lcell-03.rs:9:30
-  |
-7 |     LCellOwner::scope(|mut owner1| {
-  |                        ----------
-  |                        |
-  |                        `owner1` is a reference that is only valid in the closure body
-  |                        has type `LCellOwner<'1>`
-8 |         LCellOwner::scope(|mut owner2| {
-9 |             let c1 = Rc::new(owner1.cell(100u32));
-  |                              ^^^^^^^^^^^^^^^^^^^
-  |                              |
-  |                              `owner1` escapes the closure body here
-  |                              argument requires that `'1` must outlive `'static`
+  --> src/compiletest/lcell-03.rs:10:29
+   |
+7  |     LCellOwner::scope(|mut owner1| {
+   |                        ----------
+   |                        |
+   |                        `owner1` is a reference that is only valid in the closure body
+   |                        has type `LCellOwner<'1>`
+...
+10 |             let c1mutref2 = owner2.rw(&c1);    // Compile error
+   |                             ^^^^^^^^^^^^^^
+   |                             |
+   |                             `owner1` escapes the closure body here
+   |                             argument requires that `'1` must outlive `'static`

@@ -16,7 +16,7 @@ note: required because it's used within this closure
 12  |             let handle = s.spawn(|_| owner.ro(&cell).set(200));
     |                                  ^^^
 note: required by a bound in `crossbeam::thread::Scope::<'env>::spawn`
-   --> /home/jim/.cargo/registry/src/index.crates.io-6f17d22bba15001f/crossbeam-utils-0.7.2/src/thread.rs:243:12
+   --> /home/jim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/crossbeam-utils-0.7.2/src/thread.rs:243:12
     |
 240 |     pub fn spawn<'scope, F, T>(&'scope self, f: F) -> ScopedJoinHandle<'scope, T>
     |            ----- required by a bound in this associated function

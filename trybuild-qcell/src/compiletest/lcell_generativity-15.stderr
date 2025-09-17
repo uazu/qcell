@@ -5,10 +5,10 @@ error[E0277]: `Rc<i32>` cannot be sent between threads safely
      |           ----- --------^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
      |           |     |
      |           |     `Rc<i32>` cannot be sent between threads safely
-     |           |     within this `[closure@$DIR/src/compiletest/lcell_generativity-15.rs:13:17: 13:25]`
+     |           |     within this `{closure@lcell_generativity-15.rs:13:17}`
      |           required by a bound introduced by this call
      |
-     = help: within `[closure@$DIR/src/compiletest/lcell_generativity-15.rs:13:17: 13:25]`, the trait `Send` is not implemented for `Rc<i32>`
+     = help: within `{closure@lcell_generativity-15.rs:13:17}`, the trait `Send` is not implemented for `Rc<i32>`
 note: required because it appears within the type `UnsafeCell<Rc<i32>>`
     --> $RUST/core/src/cell.rs
      |
@@ -25,10 +25,12 @@ note: required because it's used within this closure
 13   |         s.spawn(move |_| assert_eq!(100, **owner.ro(&cell))).join().unwrap(); // Compile fail
      |                 ^^^^^^^^
 note: required by a bound in `crossbeam::thread::Scope::<'env>::spawn`
-    --> /home/jim/.cargo/registry/src/index.crates.io-6f17d22bba15001f/crossbeam-utils-0.7.2/src/thread.rs:243:12
+    --> /home/jim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/crossbeam-utils-0.7.2/src/thread.rs:243:12
      |
 240  |     pub fn spawn<'scope, F, T>(&'scope self, f: F) -> ScopedJoinHandle<'scope, T>
      |            ----- required by a bound in this associated function
 ...
 243  |         F: Send + 'env,
      |            ^^^^ required by this bound in `Scope::<'env>::spawn`
+     = note: the full name for the type has been written to '/home/jim/cargo-target/tests/target/x86_64-unknown-linux-gnu/debug/deps/$CRATE-a4958b724a3e2728.long-type-13285430179926813119.txt'
+     = note: consider using `--verbose` to print the full type name to the console

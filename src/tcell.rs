@@ -206,7 +206,7 @@ impl<Q: 'static> TCellOwner<Q> {
         tc2: &'a TCell<Q, U>,
     ) -> (&'a mut T, &'a mut U) {
         assert!(
-            tc1 as *const _ as *const () as usize != tc2 as *const _ as *const () as usize,
+            !core::ptr::eq(tc1 as *const _ as *const (), tc2 as *const _ as *const ()),
             "Illegal to borrow same TCell twice with rw2()"
         );
         unsafe { (&mut *tc1.value.get(), &mut *tc2.value.get()) }
@@ -222,9 +222,9 @@ impl<Q: 'static> TCellOwner<Q> {
         tc3: &'a TCell<Q, V>,
     ) -> (&'a mut T, &'a mut U, &'a mut V) {
         assert!(
-            (tc1 as *const _ as *const () as usize != tc2 as *const _ as *const () as usize)
-                && (tc2 as *const _ as *const () as usize != tc3 as *const _ as *const () as usize)
-                && (tc3 as *const _ as *const () as usize != tc1 as *const _ as *const () as usize),
+            !core::ptr::eq(tc1 as *const _ as *const (), tc2 as *const _ as *const ())
+                && !core::ptr::eq(tc2 as *const _ as *const (), tc3 as *const _ as *const ())
+                && !core::ptr::eq(tc3 as *const _ as *const (), tc1 as *const _ as *const ()),
             "Illegal to borrow same TCell twice with rw3()"
         );
         unsafe {
@@ -318,7 +318,7 @@ impl<Q, T: ?Sized> TCell<Q, T> {
     }
 }
 
-impl<Q: 'static, T: Default + ?Sized> Default for TCell<Q, T> {
+impl<Q: 'static, T: Default> Default for TCell<Q, T> {
     fn default() -> Self {
         TCell::new(T::default())
     }

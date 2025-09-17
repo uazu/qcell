@@ -4,6 +4,16 @@ This project follows Rust semantic versioning.
 
 <!-- see keepachangelog.com for format ideas -->
 
+## 0.5.5 (2025-09-17)
+
+- Test with Rust 1.89, apply clippy fixups
+
+### Added
+
+- `TLCellOwner::try_new`, contributed by [Theo
+  Pantamis](https://github.com/Pantamis).
+
+
 ## 0.5.4 (2023-07-13)
 
 ### Added

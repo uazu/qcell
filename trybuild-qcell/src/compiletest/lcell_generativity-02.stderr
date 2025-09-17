@@ -1,17 +1,14 @@
-error[E0597]: `tag` does not live long enough
+error[E0716]: temporary value dropped while borrowed
   --> src/compiletest/lcell_generativity-02.rs:8:5
    |
 8  |     make_guard!(guard2);
-   |     ^^^^^^^^^^^^^^^^^^^
-   |     |
-   |     borrowed value does not live long enough
-   |     binding `tag` declared here
+   |     ^^^^^^^^^^^^^^^^^^^ creates a temporary value which is freed while still in use
 ...
 15 | }
    | -
    | |
-   | `tag` dropped here while still borrowed
+   | temporary value is freed at the end of this statement
    | borrow might be used here, when `_guard` is dropped and runs the `Drop` code for type `main::make_guard`
    |
-   = note: values in a scope are dropped in the opposite order they are defined
+   = note: consider using a `let` binding to create a longer lived value
    = note: this error originates in the macro `make_guard` (in Nightly builds, run with -Z macro-backtrace for more info)
