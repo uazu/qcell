@@ -6,6 +6,9 @@ use core::sync::atomic::{AtomicUsize, Ordering};
 #[cfg(feature = "alloc")]
 use alloc::boxed::Box;
 
+#[cfg(feature = "alloc")]
+use crate::chain::RwChain;
+
 // Ensure the alignment is 2 so we can use odd-numbered IDs for those
 // created via `QCellOwnerSeq`.
 #[repr(align(2))]
@@ -35,7 +38,7 @@ macro_rules! owner_check {
 #[cold]
 #[inline(never)]
 fn not_distinct_panic() -> ! {
-    panic!("Illegal to borrow same QCell twice with rw2() or rw3()");
+    panic!("Illegal to borrow same QCell twice with rw2(), rw3() or rw_chain()");
 }
 
 macro_rules! distinct_check {
@@ -334,6 +337,31 @@ impl QCellOwner {
                 &mut *qc3.value.get(),
             )
         }
+    }
+
+    #[cfg(feature = "alloc")]
+    pub fn rw_chain<'a, T: ?Sized>(
+        &'a mut self,
+        qc: &'a QCell<T>,
+    ) -> (&'a mut T, RwChain<'a, QCellOwner>) {
+        owner_check!(self, qc);
+        let mut chain = RwChain::new(self);
+        chain.push_addr(qc);
+        (unsafe { &mut *qc.value.get() }, chain)
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<'a> RwChain<'a, QCellOwner> {
+    #[allow(clippy::mut_from_ref)]
+    pub fn rw<T: ?Sized>(&mut self, qc: &'a QCell<T>) -> &'a mut T {
+        owner_check!(self.owner, qc);
+        if self.contains_addr(qc) {
+            not_distinct_panic();
+        }
+        self.push_addr(qc);
+
+        unsafe { &mut *qc.value.get() }
     }
 }
 

@@ -1,6 +1,9 @@
 use core::cell::UnsafeCell;
 use core::marker::PhantomData;
 
+#[cfg(feature = "alloc")]
+use crate::chain::RwChain;
+
 use super::Invariant;
 type Id<'id> = PhantomData<Invariant<&'id ()>>;
 
@@ -143,6 +146,29 @@ impl<'id> LCellOwner<'id> {
                 &mut *lc3.value.get(),
             )
         }
+    }
+
+    #[cfg(feature = "alloc")]
+    pub fn rw_chain<'a, T: ?Sized>(
+        &'a mut self,
+        lc: &'a LCell<'id, T>,
+    ) -> (&'a mut T, RwChain<'a, Self>) {
+        let mut chain = RwChain::new(self);
+        chain.push_addr(lc);
+        (unsafe { &mut *lc.value.get() }, chain)
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<'a, 'id> RwChain<'a, LCellOwner<'id>> {
+    #[allow(clippy::mut_from_ref)]
+    pub fn rw<T: ?Sized>(&mut self, lc: &'a LCell<'id, T>) -> &'a mut T {
+        if self.contains_addr(lc) {
+            panic!("Illegal to borrow same LCell twice with rw_chain()");
+        }
+        self.push_addr(lc);
+
+        unsafe { &mut *lc.value.get() }
     }
 }
 

@@ -10,6 +10,9 @@ use std::{
     sync::{Condvar, Mutex},
 };
 
+#[cfg(feature = "alloc")]
+use crate::chain::RwChain;
+
 use super::Invariant;
 
 #[cfg(all(feature = "std", not(feature = "exclusion-set")))]
@@ -235,6 +238,29 @@ impl<Q: 'static> TCellOwner<Q> {
             )
         }
     }
+
+    #[cfg(feature = "alloc")]
+    pub fn rw_chain<'a, T: ?Sized>(
+        &'a mut self,
+        tc: &'a TCell<Q, T>,
+    ) -> (&'a mut T, RwChain<'a, Self>) {
+        let mut chain = RwChain::new(self);
+        chain.push_addr(tc);
+        (unsafe { &mut *tc.value.get() }, chain)
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<'a, Q: 'static> RwChain<'a, TCellOwner<Q>> {
+    #[allow(clippy::mut_from_ref)]
+    pub fn rw<T: ?Sized>(&mut self, tc: &'a TCell<Q, T>) -> &'a mut T {
+        if self.contains_addr(tc) {
+            panic!("Illegal to borrow same TCell twice with rw_chain()");
+        }
+        self.push_addr(tc);
+
+        unsafe { &mut *tc.value.get() }
+    }
 }
 
 /// Cell whose contents is owned (for borrowing purposes) by a
@@ -411,6 +437,32 @@ mod tests {
         rx.recv().unwrap();
         let mut _owner = ACellOwner::new(); // Panics here
         let _ = rx.recv();
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn tcell_nested() {
+        struct Marker;
+        type ACellOwner = TCellOwner<Marker>;
+        let mut owner = ACellOwner::new();
+        let nested = owner.cell(Box::new(owner.cell(35u32)));
+        let (inner, mut chain) = owner.rw_chain(&nested);
+        (*chain.rw(inner)) = 42;
+        let inner = owner.ro(&nested);
+        let val = owner.ro(inner);
+        assert_eq!(*val, 42);
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    #[should_panic]
+    fn tcell_same_chain() {
+        struct Marker;
+        type ACellOwner = TCellOwner<Marker>;
+        let mut owner = ACellOwner::new();
+        let c = owner.cell(35u32);
+        let (_rw1, mut chain) = owner.rw_chain(&c);
+        let _rw2 = chain.rw(&c);
     }
 
     #[cfg(feature = "std")]

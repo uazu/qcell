@@ -368,6 +368,8 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
+#[cfg(feature = "alloc")]
+mod chain;
 mod lcell;
 mod qcell;
 mod tcell;
@@ -410,6 +412,7 @@ pub extern crate generativity;
 #[allow(dead_code)]
 struct Invariant<T>(fn(T) -> T);
 
+pub use crate::chain::RwChain;
 pub use crate::lcell::LCell;
 pub use crate::lcell::LCellOwner;
 pub use crate::qcell::QCell;

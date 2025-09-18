@@ -3,6 +3,9 @@ use std::cell::UnsafeCell;
 use std::collections::HashSet;
 use std::marker::PhantomData;
 
+#[cfg(feature = "alloc")]
+use crate::chain::RwChain;
+
 use super::Invariant;
 
 std::thread_local! {
@@ -128,6 +131,29 @@ impl<Q: 'static> TLCellOwner<Q> {
                 &mut *tc3.value.get(),
             )
         }
+    }
+
+    #[cfg(feature = "alloc")]
+    pub fn rw_chain<'a, T: ?Sized>(
+        &'a mut self,
+        tc: &'a TLCell<Q, T>,
+    ) -> (&'a mut T, RwChain<'a, Self>) {
+        let mut chain = RwChain::new(self);
+        chain.push_addr(tc);
+        (unsafe { &mut *tc.value.get() }, chain)
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<'a, Q: 'static> RwChain<'a, TLCellOwner<Q>> {
+    #[allow(clippy::mut_from_ref)]
+    pub fn rw<T: ?Sized>(&mut self, tc: &'a TLCell<Q, T>) -> &'a mut T {
+        if self.contains_addr(tc) {
+            panic!("Illegal to borrow same TLCell twice with rw_chain()");
+        }
+        self.push_addr(tc);
+
+        unsafe { &mut *tc.value.get() }
     }
 }
 
