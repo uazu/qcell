@@ -498,21 +498,19 @@ impl QCellOwnerSeq {
 ///
 /// There are many ways to safely pin a value, such as
 /// [`Box::pin`](https://doc.rust-lang.org/std/boxed/struct.Box.html#method.pin),
+/// [`std::pin::pin!`](https://doc.rust-lang.org/std/pin/macro.pin.html),
 /// [`pin-utils::pin_mut!`](https://docs.rs/pin-utils/latest/pin_utils/macro.pin_mut.html),
 /// [`tokio::pin!`](https://docs.rs/tokio/latest/tokio/macro.pin.html),
 /// or the [`pin-project`](https://github.com/taiki-e/pin-project)
 /// crate.
 ///
-/// The following example uses the `pin_mut!` macro from the
-/// `pin-utils` crate:
+/// The following example uses the `pin!` macro from the std library
 ///
 /// ```
-/// use pin_utils::pin_mut;
 /// use qcell::{QCell, QCellOwnerPinned};
 ///# use std::rc::Rc;
-///# use std::pin::Pin;
-/// let mut owner = QCellOwnerPinned::new();
-/// pin_mut!(owner);
+///# use std::pin::{Pin, pin};
+/// let mut owner = pin!(QCellOwnerPinned::new());
 /// let item = Rc::new(owner.as_ref().cell(Vec::<u8>::new()));
 /// owner.as_mut().rw(&item).push(1);
 /// test(owner, &item);
@@ -529,8 +527,7 @@ impl QCellOwnerSeq {
 /// ```
 /// use crate::qcell::{QCell, QCellOwnerPinned};
 /// use pin_project::pin_project;
-/// use pin_utils::pin_mut;
-///# use std::pin::Pin;
+///# use std::pin::{Pin, pin};
 ///# use std::rc::Rc;
 ///
 /// #[pin_project]
@@ -540,12 +537,10 @@ impl QCellOwnerSeq {
 ///     owner: QCellOwnerPinned,
 /// }
 ///
-/// let mystruct = MyStruct {
+/// let mut mystruct = pin!(MyStruct {
 ///     _misc: 0,
 ///     owner: QCellOwnerPinned::new(),
-/// };
-///
-/// pin_mut!(mystruct);
+/// });
 ///
 /// let item = Rc::new(
 ///     mystruct.as_mut().project().owner.as_ref().cell(Vec::<u8>::new())
@@ -707,16 +702,13 @@ impl QCellOwnerPinned {
 
 #[cfg(test)]
 mod tests {
-    use core::pin::Pin;
-
-    use pin_utils::pin_mut;
+    use core::pin::{Pin, pin};
 
     use super::{QCell, QCellOwnerPinned, QCellOwnerSeq};
 
     #[test]
     fn qcell_pinned() {
-        let owner = QCellOwnerPinned::new();
-        pin_mut!(owner);
+        let mut owner = pin!(QCellOwnerPinned::new());
         let c1 = owner.as_ref().cell(100u32);
         let c2 = owner.as_ref().cell(200u32);
         (*owner.as_mut().rw(&c1)) += 1;
@@ -729,8 +721,7 @@ mod tests {
 
     #[test]
     fn qcell_fast_ids_pinned() {
-        let owner1 = QCellOwnerPinned::new();
-        pin_mut!(owner1);
+        let owner1 = pin!(QCellOwnerPinned::new());
         let id1 = owner1.as_ref().id();
         let owner2 = unsafe { QCellOwnerSeq::new() };
         let id2 = owner2.id;
@@ -740,8 +731,7 @@ mod tests {
         assert_ne!(id2.0, id3.0, "Expected ID 2/3 to be different");
         drop(owner2);
         drop(owner3);
-        let owner4 = QCellOwnerPinned::new();
-        pin_mut!(owner4);
+        let owner4 = pin!(QCellOwnerPinned::new());
         let id4 = owner4.as_ref().id();
         assert_ne!(id1.0, id4.0, "Expected ID 1/4 to be different");
         assert_ne!(id2.0, id4.0, "Expected ID 2/4 to be different");
@@ -750,10 +740,8 @@ mod tests {
 
     #[test]
     fn qcell_sep_ids_pinned() {
-        let owner1 = QCellOwnerPinned::new();
-        let owner2 = QCellOwnerPinned::new();
-        pin_mut!(owner1);
-        pin_mut!(owner2);
+        let owner1 = pin!(QCellOwnerPinned::new());
+        let owner2 = pin!(QCellOwnerPinned::new());
         let id1 = owner1.as_ref().id();
         let id2 = owner2.as_ref().id();
         let c11 = id1.cell(1u32);
@@ -771,7 +759,7 @@ mod tests {
 
     #[test]
     fn qcell_unsized_pinned() {
-        let owner = QCellOwnerPinned::new();
+        let mut owner = pin!(QCellOwnerPinned::new());
         struct Squares(u32);
         struct Integers(u64);
         trait Series {
@@ -806,7 +794,6 @@ mod tests {
             }
         }
 
-        pin_mut!(owner);
         let cell1 = series(4, false, owner.as_ref());
         let cell2 = series(7, true, owner.as_ref());
         let cell3 = series(3, true, owner.as_ref());
