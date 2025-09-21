@@ -200,6 +200,11 @@ impl<T: ?Sized> QCell<T> {
     pub fn get_mut(&mut self) -> &mut T {
         self.value.get_mut()
     }
+
+    #[inline]
+    pub fn ptr(&self) -> *mut T {
+        self.value.get()
+    }
 }
 
 /// Borrowing-owner of zero or more [`QCell`] instances.
